@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor IoT - ESP32</title>
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #3b82f6;
+        }
+
+        body {
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .status-badge {
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            transform: translate(30%, -30%);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            opacity: 0.2;
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+        }
+
+        .gradient-bg {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .badge-pulse {
+            animation: pulse-animation 2s infinite;
+        }
+
+        .table-responsive {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .stat-mini {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            text-align: center;
+        }
+
+        .stat-mini-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 5px 0;
+        }
+
+        .stat-mini-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .alert-custom {
+            border-left: 4px solid;
+            border-radius: 8px;
+        }
+
+        .spinner-custom {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .btn-refresh {
+            border-radius: 25px;
+            padding: 10px 30px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-thermometer-half text-primary"></i>
+                <strong>Monitor IoT ESP32</strong>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link">
+                            <span class="badge bg-success badge-pulse" id="status-badge">
+                                <i class="bi bi-circle-fill"></i> Sistema Activo
+                            </span>
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link" id="last-update">
+                            <i class="bi bi-clock"></i> Actualizando...
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenedor Principal -->
+    <div class="container-fluid py-4">
+        
+        <!-- Alert Container -->
+        <div id="alert-container"></div>
+
+        <!-- Cards de Datos Actuales -->
+        <div class="row g-4 mb-4">
+            <!-- Temperatura Actual -->
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card stat-card text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="card-body">
+                        <i class="bi bi-thermometer-half stat-icon"></i>
+                        <h6 class="card-subtitle mb-2 opacity-75">
+                            <i class="bi bi-thermometer"></i> Temperatura Actual
+                        </h6>
+                        <h2 class="stat-value" id="temp-actual">--</h2>
+                        <p class="mb-0">°C</p>
+                        <small class="opacity-75" id="temp-time">Esperando datos...</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Humedad Actual -->
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card stat-card text-white" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div class="card-body">
+                        <i class="bi bi-droplet-half stat-icon"></i>
+                        <h6 class="card-subtitle mb-2 opacity-75">
+                            <i class="bi bi-droplet"></i> Humedad Actual
+                        </h6>
+                        <h2 class="stat-value" id="humedad-actual">--</h2>
+                        <p class="mb-0">%</p>
+                        <small class="opacity-75" id="humedad-time">Esperando datos...</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Registros -->
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card stat-card text-white" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                    <div class="card-body">
+                        <i class="bi bi-database stat-icon"></i>
+                        <h6 class="card-subtitle mb-2 opacity-75">
+                            <i class="bi bi-bar-chart"></i> Registros
+                        </h6>
+                        <h2 class="stat-value" id="total-registros">--</h2>
+                        <p class="mb-0">datos</p>
+                        <small class="opacity-75">Últimas 24 horas</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dispositivos Activos -->
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card stat-card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="card-body">
+                        <i class="bi bi-cpu stat-icon"></i>
+                        <h6 class="card-subtitle mb-2 opacity-75">
+                            <i class="bi bi-hdd-network"></i> Dispositivos
+                        </h6>
+                        <h2 class="stat-value" id="total-dispositivos">--</h2>
+                        <p class="mb-0">activos</p>
+                        <small class="opacity-75">Conectados</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico Principal -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-graph-up text-primary"></i>
+                                Histórico de Sensores
+                            </h5>
+                            <button class="btn btn-primary btn-sm btn-refresh" onclick="cargarDatos()">
+                                <i class="bi bi-arrow-clockwise"></i> Actualizar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="sensorChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas Detalladas -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clipboard-data text-info"></i>
+                            Estadísticas (Últimas 24 Horas)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-6 col-md-4 col-lg-2">
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Temp. Promedio</div>
+                                    <div class="stat-mini-value" id="temp-promedio">--</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4 col-lg-2">
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Temp. Máxima</div>
+                                    <div class="stat-mini-value" id="temp-maxima">--</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4 col-lg-2">
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Temp. Mínima</div>
+                                    <div class="stat-mini-value" id="temp-minima">--</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4 col-lg-2">
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Hum. Promedio</div>
+                                    <div class="stat-mini-value" id="humedad-promedio">--</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4 col-lg-2">
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Hum. Máxima</div>
+                                    <div class="stat-mini-value" id="humedad-maxima">--</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4 col-lg-2">
+                                <div class="stat-mini">
+                                    <div class="stat-mini-label">Hum. Mínima</div>
+                                    <div class="stat-mini-value" id="humedad-minima">--</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Últimos Registros -->
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-table text-success"></i>
+                            Últimos Registros
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="tabla-registros">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Dispositivo</th>
+                                        <th>Temperatura</th>
+                                        <th>Humedad</th>
+                                        <th>Fecha/Hora</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-body">
+                                    <tr>
+                                        <td colspan="5" class="text-center">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Cargando...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- JavaScript Dashboard -->
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
