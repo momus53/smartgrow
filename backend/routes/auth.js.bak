@@ -1,0 +1,159 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_in_prod';
+
+// Export a function that receives the DB connection and returns a router
+module.exports = function (db) {
+  const router = express.Router();
+
+  function signToken(payload) {
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
+  }
+
+  // Middleware: verify JWT and check sesiones table for active session
+  function autenticarToken(req, res, next) {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Token no proporcionado' });
+
+    const parts = authHeader.split(' ');
+    const token = parts.length === 2 ? parts[1] : parts[0];
+
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+      if (err) return res.status(401).json({ error: 'Token inválido o expirado' });
+
+      const checkSessionQuery = 'SELECT id, activa, fecha_expiracion FROM sesiones WHERE token = ? LIMIT 1';
+      db.query(checkSessionQuery, [token], (err, rows) => {
+        if (err) {
+          console.error('Error verificando sesión:', err);
+          return res.status(500).json({ error: 'Error del servidor' });
+        }
+
+        if (!rows || rows.length === 0) return res.status(401).json({ error: 'Sesión no encontrada (token revocado?)' });
+
+        const ses = rows[0];
+        if (!ses.activa) return res.status(401).json({ error: 'Sesión invalidada' });
+        if (ses.fecha_expiracion && new Date(ses.fecha_expiracion) < new Date()) return res.status(401).json({ error: 'Sesión expirada' });
+
+        req.user = decoded;
+        req.session = ses;
+        next();
+      });
+    });
+  }
+
+  // POST /auth/register
+  router.post('/register', (req, res) => {
+    const { username, email, password, nombre_completo } = req.body || {};
+    if (!username || !email || !password) return res.status(400).json({ error: 'username, email y password son requeridos' });
+
+    const checkQuery = 'SELECT id FROM usuarios WHERE username = ? OR email = ? LIMIT 1';
+    db.query(checkQuery, [username, email], (err, rows) => {
+      if (err) {
+        console.error('Error verificando usuario:', err);
+        return res.status(500).json({ error: 'Error del servidor' });
+      }
+
+      if (rows && rows.length > 0) return res.status(409).json({ error: 'Username o email ya registrado' });
+
+      const salt = bcrypt.genSaltSync(10);
+      const hash = bcrypt.hashSync(password, salt);
+
+      const insertQuery = `INSERT INTO usuarios (username, email, password, nombre_completo, rol, activo) VALUES (?, ?, ?, ?, 'usuario', TRUE)`;
+      db.query(insertQuery, [username, email, hash, nombre_completo || null], (err, result) => {
+        if (err) {
+          console.error('Error creando usuario:', err);
+          return res.status(500).json({ error: 'Error creando usuario' });
+        }
+
+        const userId = result.insertId;
+        const token = signToken({ id: userId, username, email });
+
+        const fechaExp = new Date(Date.now() + 8 * 3600 * 1000);
+        const mysqlFechaExp = fechaExp.toISOString().slice(0, 19).replace('T', ' ');
+        const ip = req.ip || (req.connection && req.connection.remoteAddress) || null;
+        const ua = req.get('user-agent') || null;
+
+        const insertSesion = `INSERT INTO sesiones (usuario_id, token, ip_address, user_agent, fecha_expiracion, activa) VALUES (?, ?, ?, ?, ?, TRUE)`;
+        db.query(insertSesion, [userId, token, ip, ua, mysqlFechaExp], (err) => {
+          if (err) console.warn('No se pudo crear sesión en DB (register):', err);
+          return res.status(201).json({ success: true, token, user: { id: userId, username, email, nombre_completo } });
+        });
+      });
+    });
+  });
+
+  // POST /auth/login
+  router.post('/login', (req, res) => {
+    const { username, email, password } = req.body || {};
+    if ((!username && !email) || !password) return res.status(400).json({ error: 'username/email y password son requeridos' });
+
+    const where = username ? 'username = ?' : 'email = ?';
+    const param = username || email;
+    const query = `SELECT id, username, email, password, nombre_completo, rol FROM usuarios WHERE ${where} LIMIT 1`;
+
+    db.query(query, [param], (err, rows) => {
+      if (err) {
+        console.error('Error en login:', err);
+        return res.status(500).json({ error: 'Error del servidor' });
+      }
+
+      if (!rows || rows.length === 0) return res.status(401).json({ error: 'Credenciales inválidas' });
+
+      const user = rows[0];
+      const match = bcrypt.compareSync(password, user.password);
+      if (!match) return res.status(401).json({ error: 'Credenciales inválidas' });
+
+      const token = signToken({ id: user.id, username: user.username, email: user.email, rol: user.rol });
+
+      const fechaExp = new Date(Date.now() + 8 * 3600 * 1000);
+      const mysqlFechaExp = fechaExp.toISOString().slice(0, 19).replace('T', ' ');
+      const ip = req.ip || (req.connection && req.connection.remoteAddress) || null;
+      const ua = req.get('user-agent') || null;
+
+      const insertSesion = `INSERT INTO sesiones (usuario_id, token, ip_address, user_agent, fecha_expiracion, activa) VALUES (?, ?, ?, ?, ?, TRUE)`;
+      db.query(insertSesion, [user.id, token, ip, ua, mysqlFechaExp], (err) => {
+        if (err) console.warn('No se pudo crear sesión en DB:', err);
+        return res.json({ success: true, token, user: { id: user.id, username: user.username, email: user.email, nombre_completo: user.nombre_completo, rol: user.rol } });
+      });
+    });
+  });
+
+  // POST /auth/logout
+  router.post('/logout', autenticarToken, (req, res) => {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    const parts = authHeader.split(' ');
+    const token = parts.length === 2 ? parts[1] : parts[0];
+
+    const updateQuery = 'UPDATE sesiones SET activa = FALSE WHERE token = ?';
+    db.query(updateQuery, [token], (err, result) => {
+      if (err) {
+        console.error('Error invalidando sesión:', err);
+        return res.status(500).json({ error: 'Error del servidor' });
+      }
+
+      if (result.affectedRows === 0) return res.status(404).json({ error: 'Sesión no encontrada' });
+      res.json({ success: true, message: 'Sesión cerrada' });
+    });
+  });
+
+  // GET /auth/me
+  router.get('/me', autenticarToken, (req, res) => {
+    const userId = req.user && req.user.id;
+    if (!userId) return res.status(400).json({ error: 'Usuario no identificado en token' });
+
+    const query = 'SELECT id, username, email, nombre_completo, rol, activo, fecha_registro, ultimo_acceso FROM usuarios WHERE id = ? LIMIT 1';
+    db.query(query, [userId], (err, rows) => {
+      if (err) {
+        console.error('Error obteniendo usuario:', err);
+        return res.status(500).json({ error: 'Error del servidor' });
+      }
+
+      if (!rows || rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+      res.json({ user: rows[0] });
+    });
+  });
+
+  return router;
+};

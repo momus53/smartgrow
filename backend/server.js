@@ -12,6 +12,29 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
+// Lightweight logger specifically for /auth requests to help debug 401 from browser
+app.use('/auth', (req, res, next) => {
+  try {
+    const info = {
+      method: req.method,
+      path: req.path,
+      origin: req.headers.origin || null,
+      referer: req.headers.referer || null,
+      contentType: req.headers['content-type'] || null,
+      body_has: {
+        email: req.body && typeof req.body.email !== 'undefined',
+        username: req.body && typeof req.body.username !== 'undefined',
+        password_present: req.body && typeof req.body.password !== 'undefined'
+      },
+      timestamp: new Date()
+    };
+    console.log('[incoming /auth]', JSON.stringify(info));
+  } catch (e) {
+    // ignore logging errors
+  }
+  next();
+});
+
 // Configuración de la base de datos
 const db = mysql.createConnection({
   host: process.env.DB_HOST || 'localhost',
@@ -53,6 +76,55 @@ function crearTablas() {
       console.error('❌ Error creando tabla:', err);
     } else {
       console.log('✅ Tabla datos_sensores verificada/creada');
+    }
+  });
+  
+  // Crear tabla usuarios y sesiones (si no existen) — esquema compatible con tu script
+  const crearTablaUsuariosSQL = `
+    CREATE TABLE IF NOT EXISTS usuarios (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      username VARCHAR(50) NOT NULL UNIQUE,
+      email VARCHAR(100) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL,
+      nombre_completo VARCHAR(100),
+      rol ENUM('admin','usuario') DEFAULT 'usuario',
+      activo BOOLEAN DEFAULT TRUE,
+      fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      ultimo_acceso TIMESTAMP NULL,
+      INDEX idx_username (username),
+      INDEX idx_email (email)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `;
+
+  const crearTablaSesionesSQL = `
+    CREATE TABLE IF NOT EXISTS sesiones (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      usuario_id INT NOT NULL,
+      token VARCHAR(255) NOT NULL UNIQUE,
+      ip_address VARCHAR(45),
+      user_agent TEXT,
+      fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      fecha_expiracion DATETIME NULL,
+      activa BOOLEAN DEFAULT TRUE,
+      FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+      INDEX idx_token (token),
+      INDEX idx_usuario (usuario_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `;
+
+  db.query(crearTablaUsuariosSQL, (err) => {
+    if (err) {
+      console.error('❌ Error creando tabla usuarios:', err);
+    } else {
+      console.log('✅ Tabla usuarios verificada/creada');
+    }
+  });
+
+  db.query(crearTablaSesionesSQL, (err) => {
+    if (err) {
+      console.error('❌ Error creando tabla sesiones:', err);
+    } else {
+      console.log('✅ Tabla sesiones verificada/creada');
     }
   });
 }
@@ -268,11 +340,6 @@ app.delete('/api/datos/limpiar', (req, res) => {
   });
 });
 
-// Manejo de rutas no encontradas
-app.use((req, res) => {
-  res.status(404).json({ error: 'Ruta no encontrada' });
-});
-
 // Manejo de errores global
 app.use((err, req, res, next) => {
   console.error('❌ Error del servidor:', err);
@@ -300,4 +367,21 @@ process.on('SIGINT', () => {
     }
     process.exit(0);
   });
+});
+
+// Rutas de autenticación (register, login, me)
+// Rutas de autenticación (register, login, me)
+try {
+  const authRouter = require(path.join(__dirname, 'routes', 'auth'))(db);
+  app.use('/auth', authRouter);
+} catch (err) {
+  console.warn('⚠️ No se pudo cargar el módulo de autenticación (routes/auth.js). Asegúrate de que exista y no tenga errores de sintaxis.');
+}
+
+// Dev-only: mount debug endpoint to see last login attempt recorded by auth module
+// debug endpoint now mounted inside auth router (has access to closure)
+
+// Manejo de rutas no encontradas
+app.use((req, res) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
 });
