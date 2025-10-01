@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - IoT Monitor</title>
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="#">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .auth-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .auth-header h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .auth-header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .auth-body {
+            padding: 40px;
+        }
+
+        .form-floating {
+            margin-bottom: 20px;
+        }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            border: none;
+            padding: 12px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .divider {
+            text-align: center;
+            margin: 25px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 1px;
+            background: #dee2e6;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 15px;
+            position: relative;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .password-toggle {
+            cursor: pointer;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .alert {
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab:hover {
+            background: #f8f9fa;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .password-strength {
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            width: 0;
+            transition: all 0.3s;
+        }
+
+        .strength-weak { background: #dc3545; width: 33%; }
+        .strength-medium { background: #ffc107; width: 66%; }
+        .strength-strong { background: #28a745; width: 100%; }
+
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <!-- Header -->
+            <div class="auth-header">
+                <div class="icon-circle">
+                    <i class="bi bi-thermometer-half"></i>
+                </div>
+                <h1>IoT Monitor</h1>
+                <p>Sistema de Monitoreo ESP32</p>
+            </div>
+
+            <!-- Body -->
+            <div class="auth-body">
+                <!-- Alert Container -->
+                <div id="alert-container"></div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('login')">
+                        <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                    </div>
+                    <div class="tab" onclick="switchTab('register')">
+                        <i class="bi bi-person-plus"></i> Registrarse
+                    </div>
+                </div>
+
+                <!-- Login Form -->
+                <div id="login-form" class="form-section active">
+                    <form onsubmit="handleLogin(event)">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="login-username" 
+                                   placeholder="Usuario" required>
+                            <label for="login-username">
+                                <i class="bi bi-person"></i> Usuario o Email
+                            </label>
+                        </div>
+
+                        <div class="password-wrapper">
+                            <div class="form-floating">
+                                <input type="password" class="form-control" id="login-password" 
+                                       placeholder="Contraseña" required>
+                                <label for="login-password">
+                                    <i class="bi bi-lock"></i> Contraseña
+                                </label>
+                            </div>
+                            <i class="bi bi-eye password-toggle" id="toggle-login-password" 
+                               onclick="togglePassword('login-password', 'toggle-login-password')"></i>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="remember-me">
+                            <label class="form-check-label" for="remember-me">
+                                Recordarme
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" id="login-btn">
+                            <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                        </button>
+                    </form>
+
+                    <div class="divider">
+                        <span>¿Olvidaste tu contraseña?</span>
+                    </div>
+
+                    <div class="text-center">
+                        <small class="text-muted">
+                            Contacta al administrador para recuperarla
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Register Form -->
+                <div id="register-form" class="form-section">
+                    <form onsubmit="handleRegister(event)">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="register-username" 
+                                   placeholder="Usuario" required minlength="3">
+                            <label for="register-username">
+                                <i class="bi bi-person"></i> Nombre de Usuario
+                            </label>
+                        </div>
+
+                        <div class="form-floating">
+                            <input type="email" class="form-control" id="register-email" 
+                                   placeholder="Email" required>
+                            <label for="register-email">
+                                <i class="bi bi-envelope"></i> Email
+                            </label>
+                        </div>
+
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="register-fullname" 
+                                   placeholder="Nombre Completo">
+                            <label for="register-fullname">
+                                <i class="bi bi-person-badge"></i> Nombre Completo
+                            </label>
+                        </div>
+
+                        <div class="password-wrapper">
+                            <div class="form-floating">
+                                <input type="password" class="form-control" id="register-password" 
+                                       placeholder="Contraseña" required minlength="6"
+                                       oninput="checkPasswordStrength(this.value)">
+                                <label for="register-password">
+                                    <i class="bi bi-lock"></i> Contraseña
+                                </label>
+                            </div>
+                            <i class="bi bi-eye password-toggle" id="toggle-register-password" 
+                               onclick="togglePassword('register-password', 'toggle-register-password')"></i>
+                        </div>
+                        <div class="password-strength">
+                            <div class="password-strength-bar" id="strength-bar"></div>
+                        </div>
+                        <small class="text-muted d-block mb-3">
+                            Mínimo 6 caracteres
+                        </small>
+
+                        <div class="password-wrapper">
+                            <div class="form-floating">
+                                <input type="password" class="form-control" id="register-password-confirm" 
+                                       placeholder="Confirmar Contraseña" required>
+                                <label for="register-password-confirm">
+                                    <i class="bi bi-lock-fill"></i> Confirmar Contraseña
+                                </label>
+                            </div>
+                            <i class="bi bi-eye password-toggle" id="toggle-register-confirm" 
+                               onclick="togglePassword('register-password-confirm', 'toggle-register-confirm')"></i>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="accept-terms" required>
+                            <label class="form-check-label" for="accept-terms">
+                                Acepto los términos y condiciones
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" id="register-btn">
+                            <i class="bi bi-person-plus"></i> Registrarse
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-4">
+            <p class="text-white mb-0">
+                <small>&copy; 2025 IoT Monitor. Sistema de Monitoreo ESP32</small>
+            </p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Auth Script -->
+    <script src="js/auth.js"></script>
+</body>
+</html>
