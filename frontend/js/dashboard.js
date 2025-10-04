@@ -8,7 +8,42 @@ let updateInterval = null;
 // INICIALIZACIÓN
 // ============================================
 
-document.addEventListener('DOMContentLoaded', () => {
+let currentUserFullName = null;
+
+async function ensureAuthenticated() {
+    // look for token in localStorage (remember) or sessionStorage
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (!token) {
+        // no token -> redirect to login
+        window.location.href = '/login.html';
+        return false;
+    }
+
+    try {
+        const res = await fetch('/auth/me', {
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) {
+            // token invalid/expired or no active session
+            window.location.href = '/login.html';
+            return false;
+        }
+        const data = await res.json();
+        // prefer nombre_completo if available, otherwise username
+        currentUserFullName = (data && data.user && (data.user.nombre_completo || data.user.username)) || null;
+        return true;
+    } catch (e) {
+        console.error('Auth check failed:', e);
+        window.location.href = '/login.html';
+        return false;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // verify session before initializing dashboard
+    const ok = await ensureAuthenticated();
+    if (!ok) return;
     console.log('🚀 Dashboard iniciado');
     cargarDatos();
     iniciarActualizacionAutomatica();
@@ -395,7 +430,8 @@ function actualizarEstadoConexion(conectado) {
     
     if (conectado) {
         badge.className = 'badge bg-success badge-pulse';
-        badge.innerHTML = '<i class="bi bi-circle-fill"></i> Sistema Activo';
+        const namePart = currentUserFullName ? ` - ${currentUserFullName}` : '';
+        badge.innerHTML = `<i class="bi bi-circle-fill"></i> Sistema Activo${namePart}`;
     } else {
         badge.className = 'badge bg-danger';
         badge.innerHTML = '<i class="bi bi-circle-fill"></i> Sin Conexión';
@@ -404,7 +440,8 @@ function actualizarEstadoConexion(conectado) {
 
 function actualizarHoraActualizacion() {
     const ahora = new Date();
-    const horaFormateada = ahora.toLocaleTimeString('es-AR');
+    // show 24-hour time
+    const horaFormateada = ahora.toLocaleTimeString('es-AR', { hour12: false });
     document.getElementById('last-update').innerHTML = 
         `<i class="bi bi-clock"></i> ${horaFormateada}`;
 }
