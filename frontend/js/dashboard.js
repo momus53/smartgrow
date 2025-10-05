@@ -13,28 +13,41 @@ let currentUserFullName = null;
 async function ensureAuthenticated() {
     // look for token in localStorage (remember) or sessionStorage
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    console.log('[dashboard] checking auth - token found:', !!token);
+    
     if (!token) {
         // no token -> redirect to login
+        console.log('[dashboard] no token, redirecting to login');
         window.location.href = '/login.html';
         return false;
     }
 
     try {
+        console.log('[dashboard] calling /auth/me with token');
         const res = await fetch('/auth/me', {
             method: 'GET',
             headers: { 'Authorization': 'Bearer ' + token }
         });
+        console.log('[dashboard] /auth/me response status:', res.status);
+        
         if (!res.ok) {
             // token invalid/expired or no active session
+            const errorText = await res.text();
+            console.log('[dashboard] auth failed, status:', res.status, 'response:', errorText);
+            console.log('[dashboard] clearing expired/invalid tokens');
+            // Clear invalid tokens
+            localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
             window.location.href = '/login.html';
             return false;
         }
         const data = await res.json();
+        console.log('[dashboard] auth successful, user:', data.user);
         // prefer nombre_completo if available, otherwise username
         currentUserFullName = (data && data.user && (data.user.nombre_completo || data.user.username)) || null;
         return true;
     } catch (e) {
-        console.error('Auth check failed:', e);
+        console.error('[dashboard] auth check failed:', e);
         window.location.href = '/login.html';
         return false;
     }
@@ -45,7 +58,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ok = await ensureAuthenticated();
     if (!ok) return;
     console.log('🚀 Dashboard iniciado');
-    cargarDatos();
+    // Manual refresh shows alert
+    await cargarDatos({ showSuccess: true });
     iniciarActualizacionAutomatica();
 });
 
@@ -53,10 +67,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 // FUNCIONES DE CARGA DE DATOS
 // ============================================
 
-async function cargarDatos() {
+async function cargarDatos(opts = {}) {
+    const showSuccess = opts && opts.showSuccess;
     try {
         actualizarEstadoConexion(true);
-        
         await Promise.all([
             cargarDatosActuales(),
             cargarEstadisticas(),
@@ -64,10 +78,10 @@ async function cargarDatos() {
             cargarTablaRegistros(),
             cargarDispositivos()
         ]);
-        
         actualizarHoraActualizacion();
-        mostrarAlerta('Datos actualizados correctamente', 'success', 2000);
-        
+        if (showSuccess) {
+            mostrarAlerta('Datos actualizados correctamente', 'success', 2000);
+        }
     } catch (error) {
         console.error('Error cargando datos:', error);
         actualizarEstadoConexion(false);
@@ -440,8 +454,12 @@ function actualizarEstadoConexion(conectado) {
 
 function actualizarHoraActualizacion() {
     const ahora = new Date();
-    // show 24-hour time
-    const horaFormateada = ahora.toLocaleTimeString('es-AR', { hour12: false });
+    // show 24-hour time without seconds
+    const horaFormateada = ahora.toLocaleTimeString('es-AR', { 
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit'
+    });
     document.getElementById('last-update').innerHTML = 
         `<i class="bi bi-clock"></i> ${horaFormateada}`;
 }
@@ -450,9 +468,8 @@ function iniciarActualizacionAutomatica() {
     // Actualizar cada 10 segundos
     updateInterval = setInterval(() => {
         console.log('🔄 Actualizando datos automáticamente...');
-        cargarDatos();
+        cargarDatos({ showSuccess: false });
     }, 10000);
-    
     console.log('✅ Actualización automática activada (cada 10 segundos)');
 }
 
@@ -461,6 +478,62 @@ function detenerActualizacionAutomatica() {
         clearInterval(updateInterval);
         updateInterval = null;
         console.log('⏸️ Actualización automática detenida');
+    }
+}
+
+// ============================================
+// FUNCIÓN DE LOGOUT
+// ============================================
+
+async function cerrarSesion() {
+    try {
+        console.log('[dashboard] iniciando logout');
+        
+        // Obtener el token
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        
+        if (token) {
+            // Llamar al endpoint de logout
+            try {
+                const response = await fetch('/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    console.log('[dashboard] logout exitoso');
+                } else {
+                    console.warn('[dashboard] error en logout del servidor, pero continuando');
+                }
+            } catch (e) {
+                console.warn('[dashboard] error de red en logout, pero continuando:', e);
+            }
+        }
+        
+        // Limpiar tokens del storage local
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+        
+        // Detener actualizaciones automáticas
+        detenerActualizacionAutomatica();
+        
+        // Mostrar mensaje y redirigir
+        mostrarAlerta('Sesión cerrada correctamente', 'success', 1500);
+        
+        // Redirigir después de un breve delay
+        setTimeout(() => {
+            window.location.href = '/login.html';
+        }, 1000);
+        
+    } catch (error) {
+        console.error('[dashboard] error durante logout:', error);
+        // Aún así limpiar y redirigir
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+        window.location.href = '/login.html';
     }
 }
 

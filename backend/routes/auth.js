@@ -7,25 +7,66 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_in_prod';
 module.exports = function (db) {
   const router = express.Router();
 
-  const signToken = (payload) => jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
+  const signToken = (payload) => {
+    const now = new Date();
+    console.log('[signToken] creating token at:', now.toISOString());
+    console.log('[signToken] JWT_SECRET length:', JWT_SECRET.length);
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
+    console.log('[signToken] token created, length:', token.length);
+    // Decode to check expiration
+    try {
+      const decoded = jwt.decode(token);
+      console.log('[signToken] token exp timestamp:', decoded.exp, 'current timestamp:', Math.floor(Date.now()/1000));
+      console.log('[signToken] token expires at:', new Date(decoded.exp * 1000).toISOString());
+    } catch (e) {
+      console.warn('[signToken] could not decode created token:', e);
+    }
+    return token;
+  };
 
   function autenticarToken(req, res, next) {
+    console.log('[autenticarToken] called for', req.method, req.path);
     const authHeader = req.headers.authorization || req.headers.Authorization;
+    console.log('[autenticarToken] authHeader present:', !!authHeader);
     if (!authHeader) return res.status(401).json({ error: 'Token no proporcionado' });
     const parts = authHeader.split(' ');
     const token = parts.length === 2 ? parts[1] : parts[0];
+    console.log('[autenticarToken] token extracted, length:', token.length);
 
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
-      if (err) return res.status(401).json({ error: 'Token inválido o expirado' });
+      if (err) {
+        console.log('[autenticarToken] JWT verification failed:', err.message);
+        console.log('[autenticarToken] current timestamp:', Math.floor(Date.now()/1000));
+        console.log('[autenticarToken] JWT_SECRET length during verify:', JWT_SECRET.length);
+        // Try to decode without verification to see token content
+        try {
+          const unverified = jwt.decode(token);
+          console.log('[autenticarToken] token claims (unverified):', {
+            exp: unverified.exp,
+            iat: unverified.iat,
+            id: unverified.id
+          });
+        } catch (e) {
+          console.log('[autenticarToken] could not decode token');
+        }
+        return res.status(401).json({ error: 'Token inválido o expirado' });
+      }
+      console.log('[autenticarToken] JWT decoded successfully, user id:', decoded.id);
       const q = 'SELECT id, activa, fecha_expiracion FROM sesiones WHERE token = ? LIMIT 1';
       db.query(q, [token], (err, rows) => {
-        if (err) return res.status(500).json({ error: 'Error verificando sesión' });
+        if (err) {
+          console.error('[autenticarToken] DB error:', err);
+          return res.status(500).json({ error: 'Error verificando sesión' });
+        }
+        console.log('[autenticarToken] session query result:', rows ? rows.length : 0, 'rows');
         if (!rows || !rows.length) return res.status(401).json({ error: 'Sesión no encontrada' });
         const s = rows[0];
+        console.log('[autenticarToken] session found - activa:', s.activa, 'expires:', s.fecha_expiracion);
         if (!s.activa) return res.status(401).json({ error: 'Sesión invalidada' });
         if (s.fecha_expiracion && new Date(s.fecha_expiracion) < new Date()) return res.status(401).json({ error: 'Sesión expirada' });
         req.user = decoded;
         req.session = s;
+        console.log('[autenticarToken] success, proceeding to route handler');
         next();
       });
     });

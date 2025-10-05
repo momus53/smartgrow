@@ -10,8 +10,6 @@
     <!-- Bootstrap Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
     
-    <script src="js/auth-check.js"></script>
-
     <!-- Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     
@@ -169,7 +167,7 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <span class="nav-link">
                             <span class="badge bg-success badge-pulse" id="status-badge">
@@ -177,10 +175,19 @@
                             </span>
                         </span>
                     </li>
+                </ul>
+                <ul class="navbar-nav mx-auto">
                     <li class="nav-item">
                         <span class="nav-link" id="last-update">
                             <i class="bi bi-clock"></i> Actualizando...
                         </span>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <button class="btn btn-outline-danger btn-sm" onclick="cerrarSesion()">
+                            <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                        </button>
                     </li>
                 </ul>
             </div>

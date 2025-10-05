@@ -8,16 +8,10 @@ require('dotenv').config();
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: true, // Acepta cualquier origen en desarrollo
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
-app.options('*', cors());
+
 // Lightweight logger specifically for /auth requests to help debug 401 from browser
 app.use('/auth', (req, res, next) => {
   try {

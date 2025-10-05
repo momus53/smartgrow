@@ -1,5 +1,5 @@
 // frontend/js/auth.js
-const API_BASE = ''; // same origin (served from Express static)
+const API_BASE = '';// same origin (served from Express static)
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -59,17 +59,15 @@ async function handleRegister(e) {
     const data = await res.json();
     if (!res.ok) return mostrarAlertaLocal(data.error || 'Error registrando', 'danger');
 
-    // ✅ CORREGIDO: Guardar token con nombre consistente
+    // guardar token
     if (data.token) {
-      localStorage.setItem('auth_token', data.token);
-      if (data.user) {
-        localStorage.setItem('user_info', JSON.stringify(data.user));
-      }
+      sessionStorage.setItem('token', data.token);
     }
 
     mostrarAlertaLocal('Usuario registrado correctamente', 'success');
-    // Redirigir al dashboard
-    setTimeout(() => { window.location.href = '/index.html'; }, 800);
+    // cambiar a login
+    switchTab('login');
+    document.getElementById('login-username').value = email || username;
   } catch (err) {
     console.error(err);
     mostrarAlertaLocal('Error de red', 'danger');
@@ -81,15 +79,14 @@ async function handleLogin(e) {
   const usernameOrEmail = document.getElementById('login-username').value.trim();
   const password = document.getElementById('login-password').value;
   const remember = document.getElementById('remember-me').checked;
-  
-  // Normalizar y detectar email
+  // normalize and detect email more robustly
   const normalized = usernameOrEmail.trim();
   const isEmail = /\S+@\S+\.\S+/.test(normalized);
   const body = {};
-  if (isEmail) body.email = normalized.toLowerCase(); 
-  else body.username = normalized;
+  if (isEmail) body.email = normalized.toLowerCase(); else body.username = normalized;
   body.password = password;
 
+  // Debug output to help trace why backend may receive username instead of email
   console.log('[auth][debug] login payload', { normalized, isEmail, body });
 
   try {
@@ -103,24 +100,15 @@ async function handleLogin(e) {
     if (!res.ok) return mostrarAlertaLocal(data.error || 'Credenciales inválidas', 'danger');
 
     const token = data.token;
-    
-    // ✅ CORREGIDO: Guardar con nombre consistente 'auth_token'
-    if (remember) {
-      localStorage.setItem('auth_token', token);
-    } else {
-      sessionStorage.setItem('auth_token', token);
-    }
-    
-    // Guardar info del usuario
-    if (data.user) {
-      const storage = remember ? localStorage : sessionStorage;
-      storage.setItem('user_info', JSON.stringify(data.user));
-    }
+    // Clear any previous tokens before setting new one
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    // Set new token
+    if (remember) localStorage.setItem('token', token); else sessionStorage.setItem('token', token);
 
-    console.log('✅ Token guardado correctamente');
     mostrarAlertaLocal('Inicio de sesión correcto', 'success');
 
-    // Redirigir a dashboard después de 800ms
+    // redirigir a dashboard (index.html) después de 800ms
     setTimeout(() => { window.location.href = '/index.html'; }, 800);
   } catch (err) {
     console.error(err);
@@ -128,107 +116,12 @@ async function handleLogin(e) {
   }
 }
 
-// ✅ NUEVO: Función auxiliar para peticiones autenticadas
-window.fetchAutenticado = async function(url, options = {}) {
-  // Buscar token en localStorage o sessionStorage
-  const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
-  
-  if (!token) {
-    console.warn('No hay token disponible');
-    window.location.href = '/login.html';
-    return null;
-  }
-  
-  // Agregar Authorization header
-  const headers = {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-    ...options.headers
-  };
-  
-  const config = {
-    ...options,
-    headers,
-    credentials: 'include'
-  };
-  
-  try {
-    const response = await fetch(url, config);
-    
-    // Si recibimos 401, token expiró o es inválido
-    if (response.status === 401) {
-      console.warn('⚠️ Token inválido o expirado, redirigiendo a login...');
-      localStorage.removeItem('auth_token');
-      sessionStorage.removeItem('auth_token');
-      localStorage.removeItem('user_info');
-      sessionStorage.removeItem('user_info');
-      window.location.href = '/login.html';
-      return null;
-    }
-    
-    return response;
-  } catch (error) {
-    console.error('Error en petición autenticada:', error);
-    throw error;
-  }
-};
-
-// ✅ NUEVO: Función para cerrar sesión
-window.cerrarSesion = async function() {
-  const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
-  
-  if (token) {
-    try {
-      await fetch('/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
-  }
-  
-  // Limpiar almacenamiento
-  localStorage.removeItem('auth_token');
-  sessionStorage.removeItem('auth_token');
-  localStorage.removeItem('user_info');
-  sessionStorage.removeItem('user_info');
-  
-  // Redirigir a login
-  window.location.href = '/login.html';
-};
-
-// Si ya hay token, verificar con el servidor antes de redirigir
-(async function() {
-  const t = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+// Si ya hay token, redirigir al dashboard
+(function() {
+  const t = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (t) {
-    console.log('🔍 Token encontrado, verificando con servidor...');
-    try {
-      const res = await fetch('/auth/me', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${t}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
-      });
-      
-      if (res.ok) {
-        console.log('✅ Token válido, redirigiendo a dashboard...');
-        window.location.href = '/index.html';
-      } else {
-        console.warn('⚠️ Token inválido, limpiando...');
-        localStorage.removeItem('auth_token');
-        sessionStorage.removeItem('auth_token');
-        localStorage.removeItem('user_info');
-        sessionStorage.removeItem('user_info');
-      }
-    } catch (err) {
-      console.error('Error verificando token:', err);
-    }
+    // opcional: podríamos verificar token con /auth/me
+    // por ahora, redirigir al dashboard
+    // window.location.href = '/index.html';
   }
 })();
