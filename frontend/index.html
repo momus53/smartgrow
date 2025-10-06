@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitor IoT - ESP32</title>
-    
+    <title>SmartGrow</title> 
     <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -161,7 +160,7 @@
         <div class="container-fluid">
             <a class="navbar-brand" href="#">
                 <i class="bi bi-thermometer-half text-primary"></i>
-                <strong>Monitor IoT ESP32</strong>
+                <strong>SmartGrow</strong>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -232,17 +231,17 @@
                 </div>
             </div>
 
-            <!-- Total Registros -->
+            <!-- Estado de Luces -->
             <div class="col-12 col-md-6 col-xl-3">
-                <div class="card stat-card text-white" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <div class="card stat-card text-white" style="background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);">
                     <div class="card-body">
-                        <i class="bi bi-database stat-icon"></i>
+                        <i class="bi bi-lightbulb stat-icon"></i>
                         <h6 class="card-subtitle mb-2 opacity-75">
-                            <i class="bi bi-bar-chart"></i> Registros
+                            <i class="bi bi-lightbulb"></i> Estado de Luces
                         </h6>
-                        <h2 class="stat-value" id="total-registros">--</h2>
-                        <p class="mb-0">datos</p>
-                        <small class="opacity-75">Últimas 24 horas</small>
+                        <h2 class="stat-value" id="luces-encendidas">--</h2>
+                        <p class="mb-0">encendidas</p>
+                        <small class="opacity-75" id="luces-apagadas">-- apagadas</small>
                     </div>
                 </div>
             </div>

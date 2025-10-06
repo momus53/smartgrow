@@ -71,6 +71,8 @@ async function cargarDatos(opts = {}) {
     const showSuccess = opts && opts.showSuccess;
     try {
         actualizarEstadoConexion(true);
+        
+        // Cargar datos principales en paralelo
         await Promise.all([
             cargarDatosActuales(),
             cargarEstadisticas(),
@@ -78,6 +80,10 @@ async function cargarDatos(opts = {}) {
             cargarTablaRegistros(),
             cargarDispositivos()
         ]);
+        
+        // Cargar datos de luces después para evitar conflictos
+        await cargarDatosLuces();
+        
         actualizarHoraActualizacion();
         if (showSuccess) {
             mostrarAlerta('Datos actualizados correctamente', 'success', 2000);
@@ -99,19 +105,29 @@ async function cargarDatosActuales() {
         const dato = await response.json();
         
         if (dato && dato.temperatura !== undefined) {
-            document.getElementById('temp-actual').textContent = dato.temperatura.toFixed(1);
-            document.getElementById('humedad-actual').textContent = dato.humedad.toFixed(1);
+            const tempActual = document.getElementById('temp-actual');
+            const humedadActual = document.getElementById('humedad-actual');
+            const tempTime = document.getElementById('temp-time');
+            const humedadTime = document.getElementById('humedad-time');
+            
+            if (tempActual) tempActual.textContent = dato.temperatura.toFixed(1);
+            if (humedadActual) humedadActual.textContent = dato.humedad.toFixed(1);
             
             const fecha = new Date(dato.timestamp);
             const tiempo = fecha.toLocaleString('es-AR');
             
-            document.getElementById('temp-time').textContent = `Actualizado: ${tiempo}`;
-            document.getElementById('humedad-time').textContent = `Actualizado: ${tiempo}`;
+            if (tempTime) tempTime.textContent = `Actualizado: ${tiempo}`;
+            if (humedadTime) humedadTime.textContent = `Actualizado: ${tiempo}`;
         } else {
-            document.getElementById('temp-actual').textContent = '--';
-            document.getElementById('humedad-actual').textContent = '--';
-            document.getElementById('temp-time').textContent = 'Sin datos';
-            document.getElementById('humedad-time').textContent = 'Sin datos';
+            const tempActual = document.getElementById('temp-actual');
+            const humedadActual = document.getElementById('humedad-actual');
+            const tempTime = document.getElementById('temp-time');
+            const humedadTime = document.getElementById('humedad-time');
+            
+            if (tempActual) tempActual.textContent = '--';
+            if (humedadActual) humedadActual.textContent = '--';
+            if (tempTime) tempTime.textContent = 'Sin datos';
+            if (humedadTime) humedadTime.textContent = 'Sin datos';
         }
     } catch (error) {
         console.error('Error cargando datos actuales:', error);
@@ -128,22 +144,30 @@ async function cargarEstadisticas() {
         
         const stats = await response.json();
         
-        // Actualizar estadísticas
-        document.getElementById('temp-promedio').textContent = 
+        // Actualizar estadísticas (verificar que los elementos existan)
+        const tempPromedio = document.getElementById('temp-promedio');
+        if (tempPromedio) tempPromedio.textContent = 
             stats.temp_promedio ? `${stats.temp_promedio.toFixed(1)}°C` : '--';
-        document.getElementById('temp-maxima').textContent = 
+        
+        const tempMaxima = document.getElementById('temp-maxima');
+        if (tempMaxima) tempMaxima.textContent = 
             stats.temp_maxima ? `${stats.temp_maxima.toFixed(1)}°C` : '--';
-        document.getElementById('temp-minima').textContent = 
+        
+        const tempMinima = document.getElementById('temp-minima');
+        if (tempMinima) tempMinima.textContent = 
             stats.temp_minima ? `${stats.temp_minima.toFixed(1)}°C` : '--';
-        document.getElementById('humedad-promedio').textContent = 
+        
+        const humedadPromedio = document.getElementById('humedad-promedio');
+        if (humedadPromedio) humedadPromedio.textContent = 
             stats.humedad_promedio ? `${stats.humedad_promedio.toFixed(1)}%` : '--';
-        document.getElementById('humedad-maxima').textContent = 
+        
+        const humedadMaxima = document.getElementById('humedad-maxima');
+        if (humedadMaxima) humedadMaxima.textContent = 
             stats.humedad_maxima ? `${stats.humedad_maxima.toFixed(1)}%` : '--';
-        document.getElementById('humedad-minima').textContent = 
+        
+        const humedadMinima = document.getElementById('humedad-minima');
+        if (humedadMinima) humedadMinima.textContent = 
             stats.humedad_minima ? `${stats.humedad_minima.toFixed(1)}%` : '--';
-        document.getElementById('total-registros').textContent = 
-            stats.total_registros || 0;
-            
     } catch (error) {
         console.error('Error cargando estadísticas:', error);
         throw error;
@@ -179,6 +203,11 @@ async function cargarTablaRegistros() {
         
         const datos = await response.json();
         const tbody = document.getElementById('tabla-body');
+        
+        if (!tbody) {
+            console.warn('Tabla de registros no encontrada en el DOM');
+            return;
+        }
         
         if (datos.length === 0) {
             tbody.innerHTML = `
@@ -216,13 +245,16 @@ async function cargarTablaRegistros() {
         
     } catch (error) {
         console.error('Error cargando tabla:', error);
-        document.getElementById('tabla-body').innerHTML = `
-            <tr>
-                <td colspan="5" class="text-center text-danger">
-                    <i class="bi bi-exclamation-triangle"></i> Error cargando datos
-                </td>
-            </tr>
-        `;
+        const tbody = document.getElementById('tabla-body');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Error cargando datos
+                    </td>
+                </tr>
+            `;
+        }
     }
 }
 
@@ -234,11 +266,59 @@ async function cargarDispositivos() {
         if (!response.ok) throw new Error('Error en la respuesta');
         
         const dispositivos = await response.json();
-        document.getElementById('total-dispositivos').textContent = dispositivos.length;
+        const totalDispositivosEl = document.getElementById('total-dispositivos');
+        if (totalDispositivosEl) {
+            totalDispositivosEl.textContent = dispositivos.length;
+        }
         
     } catch (error) {
         console.error('Error cargando dispositivos:', error);
-        document.getElementById('total-dispositivos').textContent = '--';
+        const totalDispositivosEl = document.getElementById('total-dispositivos');
+        if (totalDispositivosEl) {
+            totalDispositivosEl.textContent = '--';
+        }
+    }
+}
+
+// Cargar datos de luces
+async function cargarDatosLuces() {
+    try {
+        console.log('[dashboard] cargarDatosLuces iniciado');
+        
+        // Simular datos de luces dinámicos (puedes conectar con tu API real)
+        const hora = new Date().getHours();
+        // Simular más luces encendidas durante el día (6AM - 10PM)
+        const encendidas = (hora >= 6 && hora <= 22) ? Math.floor(Math.random() * 3) + 3 : Math.floor(Math.random() * 2) + 1;
+        const apagadas = 8 - encendidas; // Supongamos 8 luces totales
+        
+        const lucesData = {
+            encendidas: encendidas,
+            apagadas: apagadas
+        };
+        
+        console.log('[dashboard] datos de luces:', lucesData);
+        
+        const lucesEncendidas = document.getElementById('luces-encendidas');
+        const lucesApagadas = document.getElementById('luces-apagadas');
+        
+        console.log('[dashboard] elementos encontrados - encendidas:', !!lucesEncendidas, 'apagadas:', !!lucesApagadas);
+        
+        if (lucesEncendidas) {
+            lucesEncendidas.textContent = lucesData.encendidas;
+            console.log('[dashboard] actualizado luces encendidas:', lucesData.encendidas);
+        }
+        if (lucesApagadas) {
+            lucesApagadas.textContent = `${lucesData.apagadas} apagadas`;
+            console.log('[dashboard] actualizado luces apagadas:', lucesData.apagadas);
+        }
+        
+    } catch (error) {
+        console.error('Error cargando datos de luces:', error);
+        const lucesEncendidas = document.getElementById('luces-encendidas');
+        const lucesApagadas = document.getElementById('luces-apagadas');
+        
+        if (lucesEncendidas) lucesEncendidas.textContent = '--';
+        if (lucesApagadas) lucesApagadas.textContent = '-- apagadas';
     }
 }
 
