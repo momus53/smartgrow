@@ -512,8 +512,12 @@ function mostrarAlerta(mensaje, tipo = 'info', duracion = 0) {
         setTimeout(() => {
             const alertElement = document.getElementById(alertId);
             if (alertElement) {
-                const bsAlert = new bootstrap.Alert(alertElement);
-                bsAlert.close();
+                // Remover la clase 'show' para que Bootstrap aplique la transición de fade
+                alertElement.classList.remove('show');
+                // Eliminar del DOM tras una breve espera para permitir la animación
+                setTimeout(() => {
+                    if (alertElement.parentNode) alertElement.parentNode.removeChild(alertElement);
+                }, 200);
             }
         }, duracion);
     }
@@ -637,4 +641,116 @@ window.addEventListener('beforeunload', () => {
     if (chart) {
         chart.destroy();
     }
+});
+
+// ============================================
+// FUNCIONALIDAD: AGREGAR DISPOSITIVO (UI)
+// ============================================
+
+// Inicializar botón y modal de agregar dispositivo
+function initAddDeviceUI() {
+    console.log('[add-device] Iniciando initAddDeviceUI');
+    const btn = document.getElementById('btn-add-device');
+    const modalEl = document.getElementById('modalAddDevice');
+    const submitBtn = document.getElementById('submit-add-device');
+
+    console.log('[add-device] Elementos encontrados:', { btn: !!btn, modal: !!modalEl, submit: !!submitBtn });
+
+    if (!btn || !modalEl || !submitBtn) {
+        console.debug('[add-device] elementos UI no encontrados, saltando inicialización');
+        return;
+    }
+
+    // Crear o reutilizar instancia de Bootstrap Modal
+    if (!addDeviceModalInstance) {
+        addDeviceModalInstance = new bootstrap.Modal(modalEl, { backdrop: 'static' });
+        
+        // Agregar listeners para limpiar cuando el modal se cierre
+        modalEl.addEventListener('hidden.bs.modal', () => {
+            // Limpiar cualquier backdrop residual
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Restaurar scroll del body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+    }
+
+    btn.addEventListener('click', (e) => {
+        console.log('[add-device] Click event handler ejecutado!', e);
+        e.preventDefault();
+        e.stopPropagation();
+        // limpiar formulario
+        const form = document.getElementById('form-add-device');
+        if (form) form.reset();
+        addDeviceModalInstance.show();
+    });
+
+    submitBtn.addEventListener('click', async () => {
+        const name = document.getElementById('device-name').value.trim();
+        const type = document.getElementById('device-type').value.trim();
+        const desc = document.getElementById('device-desc').value.trim();
+
+        if (!name) {
+            mostrarAlerta('El nombre del dispositivo es obligatorio', 'warning', 2500);
+            return;
+        }
+
+        // Aquí puedes llamar a tu API real para crear el dispositivo.
+        // Por ahora simulamos la creación y actualizamos el contador.
+        try {
+            // ejemplo de POST real:
+            // const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            // const res = await fetch(`${API_URL}/dispositivos`, {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //         'Authorization': 'Bearer ' + token
+            //     },
+            //     body: JSON.stringify({ nombre: name, tipo: type, descripcion: desc })
+            // });
+
+            // if (!res.ok) throw new Error('Error creando dispositivo');
+
+            // Simulación: esperar 500ms
+            await new Promise(r => setTimeout(r, 500));
+
+            mostrarAlerta('Dispositivo agregado correctamente', 'success', 2000);
+            // cerrar modal
+            addDeviceModalInstance.hide();
+
+            // refrescar conteo de dispositivos
+            await cargarDispositivos();
+        } catch (e) {
+            console.error('[add-device] error agregando dispositivo:', e);
+            mostrarAlerta('No se pudo agregar el dispositivo', 'danger');
+        }
+    });
+}
+
+// Variable global para almacenar la instancia del modal
+let addDeviceModalInstance = null;
+
+// Función global para abrir modal (respaldo para onclick inline)
+function openAddDeviceModal() {
+    const modalEl = document.getElementById('modalAddDevice');
+    if (modalEl && window.bootstrap) {
+        // Si ya existe una instancia, la reutilizamos
+        if (!addDeviceModalInstance) {
+            addDeviceModalInstance = new bootstrap.Modal(modalEl, { backdrop: 'static' });
+        }
+        // limpiar formulario
+        const form = document.getElementById('form-add-device');
+        if (form) form.reset();
+        addDeviceModalInstance.show();
+    } else {
+        console.error('[add-device] Modal o Bootstrap no encontrado');
+    }
+}
+
+// Inicializar UI adicional después de cargar
+document.addEventListener('DOMContentLoaded', () => {
+    initAddDeviceUI();
 });

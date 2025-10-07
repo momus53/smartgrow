@@ -84,6 +84,7 @@
             right: 20px;
             top: 50%;
             transform: translateY(-50%);
+            pointer-events: none; /* Evita que interfiera con clicks */
         }
 
         .chart-container {
@@ -251,9 +252,15 @@
                 <div class="card stat-card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                     <div class="card-body">
                         <i class="bi bi-cpu stat-icon"></i>
-                        <h6 class="card-subtitle mb-2 opacity-75">
-                            <i class="bi bi-hdd-network"></i> Dispositivos
-                        </h6>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="card-subtitle mb-2 opacity-75">
+                                <i class="bi bi-hdd-network"></i> Dispositivos
+                            </h6>
+                            <button id="btn-add-device" class="btn btn-light btn-sm ms-2" title="Agregar dispositivo"
+                                onclick="console.log('Button clicked!'); openAddDeviceModal();" style="position: relative; z-index: 1000;">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
                         <h2 class="stat-value" id="total-dispositivos">--</h2>
                         <p class="mb-0">activos</p>
                         <small class="opacity-75">Conectados</small>
@@ -374,6 +381,38 @@
                             </table>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Agregar Dispositivo -->
+    <div class="modal fade" id="modalAddDevice" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Agregar Dispositivo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-add-device">
+                        <div class="mb-3">
+                            <label for="device-name" class="form-label">Nombre del dispositivo</label>
+                            <input type="text" class="form-control" id="device-name" required placeholder="Ej: Sensor Invernadero 1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="device-type" class="form-label">Tipo</label>
+                            <input type="text" class="form-control" id="device-type" placeholder="Ej: DHT22, ESP32">
+                        </div>
+                        <div class="mb-3">
+                            <label for="device-desc" class="form-label">Descripción (opcional)</label>
+                            <textarea class="form-control" id="device-desc" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="submit-add-device" class="btn btn-primary">Agregar</button>
                 </div>
             </div>
         </div>
