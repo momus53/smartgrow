@@ -121,9 +121,9 @@
                                 <i class="bi bi-plus-lg"></i>
                             </button>
                         </div>
-                        <h2 class="stat-value" id="total-dispositivos">--</h2>
-                        <p class="mb-0">activos</p>
-                        <small class="opacity-75">Conectados</small>
+                        <h2 class="stat-value" id="dispositivo-nombre" style="font-size: 1.5rem; line-height: 1.2;">--</h2>
+                        <p class="mb-0" id="dispositivos-activos-count">-- activos</p>
+                        <small class="opacity-75" id="dispositivos-status">Conectados</small>
                     </div>
                 </div>
             </div>
@@ -276,6 +276,19 @@
                             <div class="col-md-6">
                                 <label for="device-location" class="form-label">Ubicación <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="device-location" required placeholder="Ej: Invernadero A, Jardín trasero">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="device-humidity" class="form-label">Humedad actual (%)</label>
+                                <input type="number" class="form-control" id="device-humidity" min="0" max="100" step="0.1" placeholder="Ej: 65.5">
+                                <div class="form-text">Opcional. Valor actual de humedad (0-100%)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="device-temperature" class="form-label">Temperatura actual (°C)</label>
+                                <input type="number" class="form-control" id="device-temperature" min="-50" max="100" step="0.1" placeholder="Ej: 23.5">
+                                <div class="form-text">Opcional. Temperatura actual en grados Celsius</div>
                             </div>
                         </div>
                         

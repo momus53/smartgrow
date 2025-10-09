@@ -19,7 +19,10 @@ module.exports = function (db, autenticarToken) {
                 fecha_registro, 
                 ultima_conexion,
                 configuracion,
-                activo
+                activo,
+                humedad_actual,
+                temperatura_actual,
+                fecha_ultima_lectura
             FROM dispositivos 
             WHERE usuario_id = ? AND activo = TRUE 
             ORDER BY fecha_registro DESC
@@ -88,7 +91,9 @@ module.exports = function (db, autenticarToken) {
             identificador_unico,
             descripcion,
             ubicacion,
-            configuracion
+            configuracion,
+            humedad_actual,
+            temperatura_actual
         } = req.body;
 
         console.log('[dispositivos] POST / - creando dispositivo para usuario:', userId);
@@ -120,11 +125,12 @@ module.exports = function (db, autenticarToken) {
         function insertDevice() {
             const insertQuery = `
                 INSERT INTO dispositivos 
-                (usuario_id, nombre, tipo, identificador_unico, descripcion, ubicacion, configuracion, estado)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'inactivo')
+                (usuario_id, nombre, tipo, identificador_unico, descripcion, ubicacion, configuracion, estado, humedad_actual, temperatura_actual, fecha_ultima_lectura)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'inactivo', ?, ?, ?)
             `;
 
             const configJson = configuracion ? JSON.stringify(configuracion) : null;
+            const fechaLectura = (humedad_actual !== undefined || temperatura_actual !== undefined) ? new Date() : null;
 
             db.query(insertQuery, [
                 userId,
@@ -133,7 +139,10 @@ module.exports = function (db, autenticarToken) {
                 identificador_unico || null,
                 descripcion || null,
                 ubicacion || null,
-                configJson
+                configJson,
+                humedad_actual || null,
+                temperatura_actual || null,
+                fechaLectura
             ], (err, result) => {
                 if (err) {
                     console.error('[dispositivos] Error creando dispositivo:', err);
@@ -153,7 +162,10 @@ module.exports = function (db, autenticarToken) {
                     ubicacion,
                     estado: 'inactivo',
                     fecha_registro: new Date().toISOString(),
-                    configuracion
+                    configuracion,
+                    humedad_actual,
+                    temperatura_actual,
+                    fecha_ultima_lectura: fechaLectura
                 });
             });
         }

@@ -301,59 +301,56 @@ async function cargarDispositivos() {
         console.log('[dashboard] dispositivos cargados:', dispositivos.length);
         console.log('[dashboard] dispositivos recibidos:', dispositivos);
         
-        const totalDispositivosEl = document.getElementById('total-dispositivos');
-        if (totalDispositivosEl) {
-            totalDispositivosEl.textContent = dispositivos.length;
-        }
+        // Los contadores se actualizan en la lógica de tarjetas más abajo
         
         // Actualizar la tarjeta con información detallada
         const dispositivosActivos = dispositivos.filter(d => d.estado === 'activo');
         console.log('[dashboard] dispositivos activos encontrados:', dispositivosActivos.length);
         console.log('[dashboard] todos los dispositivos:', dispositivos.map(d => ({ nombre: d.nombre, estado: d.estado })));
         
-        const cardBody = totalDispositivosEl.closest('.card-body');
-        console.log('[dashboard] cardBody encontrado:', !!cardBody);
+        // Actualizar tarjeta de dispositivos
+        const dispositivoNombre = document.getElementById('dispositivo-nombre');
+        const dispositivosCount = document.getElementById('dispositivos-activos-count');
+        const dispositivosStatus = document.getElementById('dispositivos-status');
         
-        if (cardBody) {
-            const statusText = cardBody.querySelector('small.opacity-75');
-            console.log('[dashboard] statusText encontrado:', !!statusText);
-            console.log('[dashboard] statusText elemento:', statusText);
-            
-            if (statusText) {
-                if (dispositivosActivos.length > 0) {
-                    // Mostrar el nombre del primer dispositivo activo
-                    const primerActivo = dispositivosActivos[0];
-                    const nombreCorto = primerActivo.nombre.length > 20 
-                        ? primerActivo.nombre.substring(0, 20) + '...' 
-                        : primerActivo.nombre;
-                    
-                    const nuevoContenido = dispositivosActivos.length === 1
-                        ? `<i class="bi bi-circle-fill text-success"></i> ${nombreCorto}`
-                        : `<i class="bi bi-circle-fill text-success"></i> ${nombreCorto} +${dispositivosActivos.length - 1} más`;
-                    
-                    console.log('[dashboard] actualizando con dispositivo activo:', nuevoContenido);
-                    statusText.innerHTML = nuevoContenido;
-                } else if (dispositivos.length > 0) {
-                    // Hay dispositivos pero ninguno activo
-                    const primerDispositivo = dispositivos[0];
-                    const nombreCorto = primerDispositivo.nombre.length > 20 
-                        ? primerDispositivo.nombre.substring(0, 20) + '...' 
-                        : primerDispositivo.nombre;
-                    
-                    const nuevoContenido = `<i class="bi bi-circle text-warning"></i> ${nombreCorto} (inactivo)`;
-                    console.log('[dashboard] actualizando con dispositivo inactivo:', nuevoContenido);
-                    statusText.innerHTML = nuevoContenido;
-                } else {
-                    // No hay dispositivos
-                    const nuevoContenido = '<i class="bi bi-plus-circle"></i> Agregar dispositivo';
-                    console.log('[dashboard] actualizando sin dispositivos:', nuevoContenido);
-                    statusText.innerHTML = nuevoContenido;
-                }
+        if (dispositivoNombre && dispositivosCount && dispositivosStatus) {
+            if (dispositivosActivos.length > 0) {
+                // Mostrar el nombre del primer dispositivo activo
+                const primerActivo = dispositivosActivos[0];
+                const nombreCompleto = primerActivo.nombre.length > 25 
+                    ? primerActivo.nombre.substring(0, 25) + '...' 
+                    : primerActivo.nombre;
+                
+                dispositivoNombre.innerHTML = `<i class="bi bi-circle-fill text-success me-2"></i>${nombreCompleto}`;
+                dispositivosCount.textContent = `${dispositivosActivos.length} activos`;
+                dispositivosStatus.innerHTML = 'Conectados';
+                
+                // Actualizar tarjetas de temperatura y humedad
+                actualizarTarjetasSensores(primerActivo);
+                
+            } else if (dispositivos.length > 0) {
+                // Hay dispositivos pero ninguno activo
+                const primerDispositivo = dispositivos[0];
+                const nombreCompleto = primerDispositivo.nombre.length > 25 
+                    ? primerDispositivo.nombre.substring(0, 25) + '...' 
+                    : primerDispositivo.nombre;
+                
+                dispositivoNombre.innerHTML = `<i class="bi bi-circle text-warning me-2"></i>${nombreCompleto}`;
+                dispositivosCount.textContent = `${dispositivos.length} inactivos`;
+                dispositivosStatus.innerHTML = 'Desconectados';
+                
+                // Limpiar tarjetas de sensores
+                limpiarTarjetasSensores();
+                
             } else {
-                console.warn('[dashboard] No se encontró el elemento small.opacity-75');
+                // No hay dispositivos
+                dispositivoNombre.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Agregar dispositivo';
+                dispositivosCount.textContent = '0 dispositivos';
+                dispositivosStatus.innerHTML = 'Ninguno';
+                
+                // Limpiar tarjetas de sensores
+                limpiarTarjetasSensores();
             }
-        } else {
-            console.warn('[dashboard] No se encontró el card-body');
         }
         
         // Guardar dispositivos en variable global para uso en otras funciones
@@ -361,19 +358,20 @@ async function cargarDispositivos() {
         
     } catch (error) {
         console.error('Error cargando dispositivos:', error);
-        const totalDispositivosEl = document.getElementById('total-dispositivos');
-        if (totalDispositivosEl) {
-            totalDispositivosEl.textContent = '--';
-            
-            // Mostrar estado de error en la tarjeta
-            const cardBody = totalDispositivosEl.closest('.card-body');
-            if (cardBody) {
-                const statusText = cardBody.querySelector('small.opacity-75');
-                if (statusText) {
-                    statusText.innerHTML = '<i class="bi bi-exclamation-triangle text-warning"></i> Error cargando';
-                }
-            }
+        
+        // Mostrar estado de error
+        const dispositivoNombre = document.getElementById('dispositivo-nombre');
+        const dispositivosCount = document.getElementById('dispositivos-activos-count');
+        const dispositivosStatus = document.getElementById('dispositivos-status');
+        
+        if (dispositivoNombre && dispositivosCount && dispositivosStatus) {
+            dispositivoNombre.innerHTML = '<i class="bi bi-exclamation-triangle text-warning me-2"></i>Error';
+            dispositivosCount.textContent = 'Error cargando';
+            dispositivosStatus.innerHTML = 'Sin conexión';
         }
+        
+        // Limpiar tarjetas de sensores
+        limpiarTarjetasSensores();
     }
 }
 
@@ -388,59 +386,45 @@ function cargarDispositivosPrueba() {
         { id: 3, nombre: 'Raspberry Pi Monitor', estado: 'activo', tipo: 'Raspberry Pi', ubicacion: 'Laboratorio' }
     ];
     
-    const totalDispositivosEl = document.getElementById('total-dispositivos');
-    if (totalDispositivosEl) {
-        totalDispositivosEl.textContent = dispositivos.length;
-    }
-    
     // Actualizar la tarjeta con información detallada
     const dispositivosActivos = dispositivos.filter(d => d.estado === 'activo');
     console.log('[dashboard] dispositivos activos encontrados (prueba):', dispositivosActivos.length);
     console.log('[dashboard] todos los dispositivos (prueba):', dispositivos.map(d => ({ nombre: d.nombre, estado: d.estado })));
     
-    const cardBody = totalDispositivosEl.closest('.card-body');
-    console.log('[dashboard] cardBody encontrado (prueba):', !!cardBody);
+    // Actualizar tarjeta de dispositivos con datos de prueba
+    const dispositivoNombre = document.getElementById('dispositivo-nombre');
+    const dispositivosCount = document.getElementById('dispositivos-activos-count');
+    const dispositivosStatus = document.getElementById('dispositivos-status');
     
-    if (cardBody) {
-        const statusText = cardBody.querySelector('small.opacity-75');
-        console.log('[dashboard] statusText encontrado (prueba):', !!statusText);
-        console.log('[dashboard] statusText elemento (prueba):', statusText);
-        
-        if (statusText) {
-            if (dispositivosActivos.length > 0) {
-                // Mostrar el nombre del primer dispositivo activo
-                const primerActivo = dispositivosActivos[0];
-                const nombreCorto = primerActivo.nombre.length > 20 
-                    ? primerActivo.nombre.substring(0, 20) + '...' 
-                    : primerActivo.nombre;
-                
-                const nuevoContenido = dispositivosActivos.length === 1
-                    ? `<i class="bi bi-circle-fill text-success"></i> ${nombreCorto}`
-                    : `<i class="bi bi-circle-fill text-success"></i> ${nombreCorto} +${dispositivosActivos.length - 1} más`;
-                
-                console.log('[dashboard] actualizando con dispositivo activo (prueba):', nuevoContenido);
-                statusText.innerHTML = nuevoContenido;
-            } else if (dispositivos.length > 0) {
-                // Hay dispositivos pero ninguno activo
-                const primerDispositivo = dispositivos[0];
-                const nombreCorto = primerDispositivo.nombre.length > 20 
-                    ? primerDispositivo.nombre.substring(0, 20) + '...' 
-                    : primerDispositivo.nombre;
-                
-                const nuevoContenido = `<i class="bi bi-circle text-warning"></i> ${nombreCorto} (inactivo)`;
-                console.log('[dashboard] actualizando con dispositivo inactivo (prueba):', nuevoContenido);
-                statusText.innerHTML = nuevoContenido;
-            } else {
-                // No hay dispositivos
-                const nuevoContenido = '<i class="bi bi-plus-circle"></i> Agregar dispositivo';
-                console.log('[dashboard] actualizando sin dispositivos (prueba):', nuevoContenido);
-                statusText.innerHTML = nuevoContenido;
-            }
+    if (dispositivoNombre && dispositivosCount && dispositivosStatus) {
+        if (dispositivosActivos.length > 0) {
+            // Mostrar el nombre del primer dispositivo activo
+            const primerActivo = dispositivosActivos[0];
+            const nombreCompleto = primerActivo.nombre.length > 25 
+                ? primerActivo.nombre.substring(0, 25) + '...' 
+                : primerActivo.nombre;
+            
+            dispositivoNombre.innerHTML = `<i class="bi bi-circle-fill text-success me-2"></i>${nombreCompleto}`;
+            dispositivosCount.textContent = `${dispositivosActivos.length} activos`;
+            dispositivosStatus.innerHTML = 'Conectados (prueba)';
+            
+        } else if (dispositivos.length > 0) {
+            // Hay dispositivos pero ninguno activo
+            const primerDispositivo = dispositivos[0];
+            const nombreCompleto = primerDispositivo.nombre.length > 25 
+                ? primerDispositivo.nombre.substring(0, 25) + '...' 
+                : primerDispositivo.nombre;
+            
+            dispositivoNombre.innerHTML = `<i class="bi bi-circle text-warning me-2"></i>${nombreCompleto}`;
+            dispositivosCount.textContent = `${dispositivos.length} inactivos`;
+            dispositivosStatus.innerHTML = 'Desconectados (prueba)';
+            
         } else {
-            console.warn('[dashboard] No se encontró el elemento small.opacity-75 (prueba)');
+            // No hay dispositivos
+            dispositivoNombre.innerHTML = '<i class="bi bi-plus-circle me-2"></i>Agregar dispositivo';
+            dispositivosCount.textContent = '0 dispositivos';
+            dispositivosStatus.innerHTML = 'Ninguno (prueba)';
         }
-    } else {
-        console.warn('[dashboard] No se encontró el card-body (prueba)');
     }
     
     // Guardar dispositivos en variable global
@@ -795,25 +779,29 @@ async function cerrarSesion() {
 // Función para probar la actualización de dispositivos manualmente
 window.debugDispositivos = function() {
     console.log('=== DEBUG DISPOSITIVOS ===');
-    const totalDispositivosEl = document.getElementById('total-dispositivos');
-    const cardBody = totalDispositivosEl ? totalDispositivosEl.closest('.card-body') : null;
-    const statusText = cardBody ? cardBody.querySelector('small.opacity-75') : null;
+    const dispositivoNombre = document.getElementById('dispositivo-nombre');
+    const dispositivosCount = document.getElementById('dispositivos-activos-count');
+    const dispositivosStatus = document.getElementById('dispositivos-status');
     
     console.log('Elementos encontrados:');
-    console.log('- total-dispositivos:', !!totalDispositivosEl);
-    console.log('- card-body:', !!cardBody);
-    console.log('- small.opacity-75:', !!statusText);
+    console.log('- dispositivo-nombre:', !!dispositivoNombre);
+    console.log('- dispositivos-activos-count:', !!dispositivosCount);
+    console.log('- dispositivos-status:', !!dispositivosStatus);
     
-    if (statusText) {
-        console.log('- contenido actual del small:', statusText.innerHTML);
-        console.log('- clases del small:', statusText.className);
+    if (dispositivoNombre && dispositivosCount && dispositivosStatus) {
+        console.log('- contenido nombre:', dispositivoNombre.innerHTML);
+        console.log('- contenido count:', dispositivosCount.textContent);
+        console.log('- contenido status:', dispositivosStatus.innerHTML);
         
         // Probar actualización manual
-        statusText.innerHTML = '<i class="bi bi-circle-fill text-success"></i> ESP32 Test (DEBUG)';
-        console.log('- contenido después de actualización:', statusText.innerHTML);
+        dispositivoNombre.innerHTML = '<i class="bi bi-circle-fill text-success me-2"></i>ESP32 Test (DEBUG)';
+        dispositivosCount.textContent = '1 activos';
+        dispositivosStatus.innerHTML = 'Debug mode';
+        
+        console.log('- actualización completada');
     }
     
-    return { totalDispositivosEl, cardBody, statusText };
+    return { dispositivoNombre, dispositivosCount, dispositivosStatus };
 };
 
 // Función para forzar datos de prueba
@@ -963,6 +951,8 @@ function initAddDeviceUI() {
         const location = document.getElementById('device-location').value.trim();
         const identifier = document.getElementById('device-identifier').value.trim();
         const desc = document.getElementById('device-desc').value.trim();
+        const humidity = document.getElementById('device-humidity').value.trim();
+        const temperature = document.getElementById('device-temperature').value.trim();
 
         // Validaciones
         if (!name) {
@@ -1001,9 +991,17 @@ function initAddDeviceUI() {
                 descripcion: desc || null
             };
             
-            // Solo agregar identificador si se proporcionó
+            // Solo agregar campos opcionales si se proporcionaron
             if (identifier) {
                 payload.identificador_unico = identifier;
+            }
+            
+            if (humidity) {
+                payload.humedad_actual = parseFloat(humidity);
+            }
+            
+            if (temperature) {
+                payload.temperatura_actual = parseFloat(temperature);
             }
             
             const res = await fetch(`${API_URL}/dispositivos`, {
@@ -1054,6 +1052,73 @@ function openAddDeviceModal() {
         addDeviceModalInstance.show();
     } else {
         console.error('[add-device] Modal o Bootstrap no encontrado');
+    }
+}
+
+// Funciones para actualizar tarjetas de sensores
+function actualizarTarjetasSensores(dispositivo) {
+    // Actualizar tarjeta de temperatura
+    const tempActual = document.getElementById('temp-actual');
+    const tempTime = document.getElementById('temp-time');
+    
+    if (tempActual && tempTime) {
+        if (dispositivo.temperatura_actual !== null && dispositivo.temperatura_actual !== undefined) {
+            tempActual.textContent = dispositivo.temperatura_actual;
+            const fechaLectura = dispositivo.fecha_ultima_lectura 
+                ? new Date(dispositivo.fecha_ultima_lectura).toLocaleString('es-ES', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                })
+                : 'Ahora';
+            tempTime.innerHTML = `📡 ${dispositivo.nombre} - ${fechaLectura}`;
+        } else {
+            tempActual.textContent = '--';
+            tempTime.innerHTML = `📡 ${dispositivo.nombre} - Sin datos`;
+        }
+    }
+    
+    // Actualizar tarjeta de humedad
+    const humedadActual = document.getElementById('humedad-actual');
+    const humedadTime = document.getElementById('humedad-time');
+    
+    if (humedadActual && humedadTime) {
+        if (dispositivo.humedad_actual !== null && dispositivo.humedad_actual !== undefined) {
+            humedadActual.textContent = dispositivo.humedad_actual;
+            const fechaLectura = dispositivo.fecha_ultima_lectura 
+                ? new Date(dispositivo.fecha_ultima_lectura).toLocaleString('es-ES', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                })
+                : 'Ahora';
+            humedadTime.innerHTML = `📡 ${dispositivo.nombre} - ${fechaLectura}`;
+        } else {
+            humedadActual.textContent = '--';
+            humedadTime.innerHTML = `📡 ${dispositivo.nombre} - Sin datos`;
+        }
+    }
+}
+
+function limpiarTarjetasSensores() {
+    // Limpiar tarjeta de temperatura
+    const tempActual = document.getElementById('temp-actual');
+    const tempTime = document.getElementById('temp-time');
+    
+    if (tempActual && tempTime) {
+        tempActual.textContent = '--';
+        tempTime.innerHTML = 'Esperando datos...';
+    }
+    
+    // Limpiar tarjeta de humedad
+    const humedadActual = document.getElementById('humedad-actual');
+    const humedadTime = document.getElementById('humedad-time');
+    
+    if (humedadActual && humedadTime) {
+        humedadActual.textContent = '--';
+        humedadTime.innerHTML = 'Esperando datos...';
     }
 }
 
