@@ -158,3 +158,134 @@ body {
     padding: 10px 30px;
     font-weight: 600;
 }
+
+/* ========================================
+   MODAL DISPOSITIVOS STYLES
+   ======================================== */
+
+#modalAddDevice .modal-dialog {
+    max-width: 600px;
+}
+
+#modalAddDevice .modal-content {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+#modalAddDevice .modal-header {
+    background: var(--primary-gradient);
+    color: white;
+    border-radius: 15px 15px 0 0;
+    border-bottom: none;
+}
+
+#modalAddDevice .modal-title {
+    font-weight: 600;
+}
+
+#modalAddDevice .btn-close {
+    filter: invert(1);
+}
+
+#modalAddDevice .form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+#modalAddDevice .text-danger {
+    color: #dc3545 !important;
+    font-size: 0.9rem;
+}
+
+#modalAddDevice .form-control, 
+#modalAddDevice .form-select {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 0.75rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+#modalAddDevice .form-control:focus, 
+#modalAddDevice .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+#modalAddDevice .alert-info {
+    background: linear-gradient(135deg, #e7f3ff 0%, #f0f9ff 100%);
+    border: 1px solid #b3d7ff;
+    color: #0c5460;
+    border-radius: 10px;
+    margin-top: 1rem;
+}
+
+#modalAddDevice .form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+#modalAddDevice .form-text i {
+    color: #3b82f6;
+    margin-right: 0.25rem;
+}
+
+#modalAddDevice .modal-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+}
+
+#modalAddDevice .btn {
+    border-radius: 8px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+}
+
+/* Hover effects for inputs */
+#modalAddDevice .form-control:hover:not(:focus), 
+#modalAddDevice .form-select:hover:not(:focus) {
+    border-color: #adb5bd;
+}
+
+/* ========================================
+   DISPOSITIVOS CARD STYLES
+   ======================================== */
+
+.stat-card small.opacity-75 {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    line-height: 1.2;
+}
+
+.stat-card small.opacity-75 i {
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.text-success {
+    color: #10b981 !important;
+}
+
+.text-warning {
+    color: #f59e0b !important;
+}
+
+/* Botón agregar dispositivo en tarjeta */
+#btn-add-device {
+    font-size: 0.875rem;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+#btn-add-device:hover {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    transform: scale(1.05);
+}

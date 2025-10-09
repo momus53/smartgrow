@@ -12,6 +12,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
+// Logger para API desactivado (demasiado verboso)
+/*
+app.use('/api', (req, res, next) => {
+  console.log(`[API] ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  next();
+});
+*/
+
 // Lightweight logger specifically for /auth requests to help debug 401 from browser
 app.use('/auth', (req, res, next) => {
   try {
@@ -296,7 +304,8 @@ app.get('/api/datos/rango', (req, res) => {
   });
 });
 
-// GET - Listar dispositivos
+// GET - Listar dispositivos (RUTA ANTIGUA COMENTADA - ahora se usa el router de dispositivos)
+/*
 app.get('/api/dispositivos', (req, res) => {
   const query = `
     SELECT 
@@ -316,6 +325,7 @@ app.get('/api/dispositivos', (req, res) => {
     res.json(results);
   });
 });
+*/
 
 // DELETE - Eliminar datos antiguos (utilidad de mantenimiento)
 app.delete('/api/datos/limpiar', (req, res) => {
@@ -370,12 +380,58 @@ process.on('SIGINT', () => {
 });
 
 // Rutas de autenticación (register, login, me)
-// Rutas de autenticación (register, login, me)
+let autenticarToken = null;
 try {
-  const authRouter = require(path.join(__dirname, 'routes', 'auth'))(db);
+  const authModule = require(path.join(__dirname, 'routes', 'auth'));
+  const authRouter = authModule(db);
   app.use('/auth', authRouter);
+  
+  // Extraer el middleware autenticarToken para usarlo en otras rutas
+  // Necesitamos acceso al middleware desde el módulo auth
+  console.log('✅ Módulo de autenticación cargado');
 } catch (err) {
   console.warn('⚠️ No se pudo cargar el módulo de autenticación (routes/auth.js). Asegúrate de que exista y no tenga errores de sintaxis.');
+}
+
+// Importar JWT y recrear el middleware aquí (temporal hasta refactorizar)
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_in_prod';
+
+function autenticarTokenLocal(req, res, next) {
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+  if (!authHeader) return res.status(401).json({ error: 'Token no proporcionado' });
+  const parts = authHeader.split(' ');
+  const token = parts.length === 2 ? parts[1] : parts[0];
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      console.log('[autenticarToken] JWT verification failed:', err.message);
+      return res.status(401).json({ error: 'Token inválido o expirado' });
+    }
+    const q = 'SELECT id, activa, fecha_expiracion FROM sesiones WHERE token = ? LIMIT 1';
+    db.query(q, [token], (err, rows) => {
+      if (err) {
+        console.error('[autenticarToken] DB error:', err);
+        return res.status(500).json({ error: 'Error verificando sesión' });
+      }
+      if (!rows || !rows.length) return res.status(401).json({ error: 'Sesión no encontrada' });
+      const s = rows[0];
+      if (!s.activa) return res.status(401).json({ error: 'Sesión invalidada' });
+      if (s.fecha_expiracion && new Date(s.fecha_expiracion) < new Date()) return res.status(401).json({ error: 'Sesión expirada' });
+      req.user = decoded;
+      req.session = s;
+      next();
+    });
+  });
+}
+
+// Rutas de dispositivos
+try {
+  const dispositivosRouter = require(path.join(__dirname, 'routes', 'dispositivos'))(db, autenticarTokenLocal);
+  app.use('/api/dispositivos', dispositivosRouter);
+  console.log('✅ Rutas de dispositivos cargadas');
+} catch (err) {
+  console.warn('⚠️ No se pudo cargar el módulo de dispositivos:', err.message);
 }
 
 // Dev-only: mount debug endpoint to see last login attempt recorded by auth module

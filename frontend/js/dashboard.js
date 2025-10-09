@@ -258,26 +258,193 @@ async function cargarTablaRegistros() {
     }
 }
 
-// Cargar dispositivos
+// Cargar dispositivos del usuario actual
 async function cargarDispositivos() {
     try {
-        const response = await fetch(`${API_URL}/dispositivos`);
+        console.log('[dashboard] cargarDispositivos iniciado');
         
-        if (!response.ok) throw new Error('Error en la respuesta');
+        // Obtener token para autenticación
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (!token) {
+            console.warn('[dashboard] No hay token disponible para cargar dispositivos');
+            // Usar datos de prueba si no hay token
+            cargarDispositivosPrueba();
+            return;
+        }
+        
+        console.log('[dashboard] haciendo petición a:', `${API_URL}/dispositivos`);
+        console.log('[dashboard] token disponible:', token ? `${token.substring(0, 20)}...` : 'null');
+        
+        const response = await fetch(`${API_URL}/dispositivos`, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('[dashboard] respuesta recibida - status:', response.status);
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                console.warn('[dashboard] Token inválido al cargar dispositivos');
+                // Usar datos de prueba como fallback
+                cargarDispositivosPrueba();
+                return;
+            }
+            const errorText = await response.text();
+            console.error('[dashboard] Error en respuesta:', response.status, errorText);
+            throw new Error(`Error en la respuesta: ${response.status}`);
+        }
         
         const dispositivos = await response.json();
+        console.log('[dashboard] dispositivos cargados:', dispositivos.length);
+        console.log('[dashboard] dispositivos recibidos:', dispositivos);
+        
         const totalDispositivosEl = document.getElementById('total-dispositivos');
         if (totalDispositivosEl) {
             totalDispositivosEl.textContent = dispositivos.length;
         }
+        
+        // Actualizar la tarjeta con información detallada
+        const dispositivosActivos = dispositivos.filter(d => d.estado === 'activo');
+        console.log('[dashboard] dispositivos activos encontrados:', dispositivosActivos.length);
+        console.log('[dashboard] todos los dispositivos:', dispositivos.map(d => ({ nombre: d.nombre, estado: d.estado })));
+        
+        const cardBody = totalDispositivosEl.closest('.card-body');
+        console.log('[dashboard] cardBody encontrado:', !!cardBody);
+        
+        if (cardBody) {
+            const statusText = cardBody.querySelector('small.opacity-75');
+            console.log('[dashboard] statusText encontrado:', !!statusText);
+            console.log('[dashboard] statusText elemento:', statusText);
+            
+            if (statusText) {
+                if (dispositivosActivos.length > 0) {
+                    // Mostrar el nombre del primer dispositivo activo
+                    const primerActivo = dispositivosActivos[0];
+                    const nombreCorto = primerActivo.nombre.length > 20 
+                        ? primerActivo.nombre.substring(0, 20) + '...' 
+                        : primerActivo.nombre;
+                    
+                    const nuevoContenido = dispositivosActivos.length === 1
+                        ? `<i class="bi bi-circle-fill text-success"></i> ${nombreCorto}`
+                        : `<i class="bi bi-circle-fill text-success"></i> ${nombreCorto} +${dispositivosActivos.length - 1} más`;
+                    
+                    console.log('[dashboard] actualizando con dispositivo activo:', nuevoContenido);
+                    statusText.innerHTML = nuevoContenido;
+                } else if (dispositivos.length > 0) {
+                    // Hay dispositivos pero ninguno activo
+                    const primerDispositivo = dispositivos[0];
+                    const nombreCorto = primerDispositivo.nombre.length > 20 
+                        ? primerDispositivo.nombre.substring(0, 20) + '...' 
+                        : primerDispositivo.nombre;
+                    
+                    const nuevoContenido = `<i class="bi bi-circle text-warning"></i> ${nombreCorto} (inactivo)`;
+                    console.log('[dashboard] actualizando con dispositivo inactivo:', nuevoContenido);
+                    statusText.innerHTML = nuevoContenido;
+                } else {
+                    // No hay dispositivos
+                    const nuevoContenido = '<i class="bi bi-plus-circle"></i> Agregar dispositivo';
+                    console.log('[dashboard] actualizando sin dispositivos:', nuevoContenido);
+                    statusText.innerHTML = nuevoContenido;
+                }
+            } else {
+                console.warn('[dashboard] No se encontró el elemento small.opacity-75');
+            }
+        } else {
+            console.warn('[dashboard] No se encontró el card-body');
+        }
+        
+        // Guardar dispositivos en variable global para uso en otras funciones
+        window.userDevices = dispositivos;
         
     } catch (error) {
         console.error('Error cargando dispositivos:', error);
         const totalDispositivosEl = document.getElementById('total-dispositivos');
         if (totalDispositivosEl) {
             totalDispositivosEl.textContent = '--';
+            
+            // Mostrar estado de error en la tarjeta
+            const cardBody = totalDispositivosEl.closest('.card-body');
+            if (cardBody) {
+                const statusText = cardBody.querySelector('small.opacity-75');
+                if (statusText) {
+                    statusText.innerHTML = '<i class="bi bi-exclamation-triangle text-warning"></i> Error cargando';
+                }
+            }
         }
     }
+}
+
+// Función de prueba para cargar dispositivos de ejemplo
+function cargarDispositivosPrueba() {
+    console.log('[dashboard] usando datos de prueba para dispositivos');
+    
+    // Datos de prueba
+    const dispositivos = [
+        { id: 1, nombre: 'ESP32 Principal', estado: 'activo', tipo: 'ESP32', ubicacion: 'Invernadero A' },
+        { id: 2, nombre: 'Arduino Sensor Exterior', estado: 'inactivo', tipo: 'Arduino', ubicacion: 'Jardín' },
+        { id: 3, nombre: 'Raspberry Pi Monitor', estado: 'activo', tipo: 'Raspberry Pi', ubicacion: 'Laboratorio' }
+    ];
+    
+    const totalDispositivosEl = document.getElementById('total-dispositivos');
+    if (totalDispositivosEl) {
+        totalDispositivosEl.textContent = dispositivos.length;
+    }
+    
+    // Actualizar la tarjeta con información detallada
+    const dispositivosActivos = dispositivos.filter(d => d.estado === 'activo');
+    console.log('[dashboard] dispositivos activos encontrados (prueba):', dispositivosActivos.length);
+    console.log('[dashboard] todos los dispositivos (prueba):', dispositivos.map(d => ({ nombre: d.nombre, estado: d.estado })));
+    
+    const cardBody = totalDispositivosEl.closest('.card-body');
+    console.log('[dashboard] cardBody encontrado (prueba):', !!cardBody);
+    
+    if (cardBody) {
+        const statusText = cardBody.querySelector('small.opacity-75');
+        console.log('[dashboard] statusText encontrado (prueba):', !!statusText);
+        console.log('[dashboard] statusText elemento (prueba):', statusText);
+        
+        if (statusText) {
+            if (dispositivosActivos.length > 0) {
+                // Mostrar el nombre del primer dispositivo activo
+                const primerActivo = dispositivosActivos[0];
+                const nombreCorto = primerActivo.nombre.length > 20 
+                    ? primerActivo.nombre.substring(0, 20) + '...' 
+                    : primerActivo.nombre;
+                
+                const nuevoContenido = dispositivosActivos.length === 1
+                    ? `<i class="bi bi-circle-fill text-success"></i> ${nombreCorto}`
+                    : `<i class="bi bi-circle-fill text-success"></i> ${nombreCorto} +${dispositivosActivos.length - 1} más`;
+                
+                console.log('[dashboard] actualizando con dispositivo activo (prueba):', nuevoContenido);
+                statusText.innerHTML = nuevoContenido;
+            } else if (dispositivos.length > 0) {
+                // Hay dispositivos pero ninguno activo
+                const primerDispositivo = dispositivos[0];
+                const nombreCorto = primerDispositivo.nombre.length > 20 
+                    ? primerDispositivo.nombre.substring(0, 20) + '...' 
+                    : primerDispositivo.nombre;
+                
+                const nuevoContenido = `<i class="bi bi-circle text-warning"></i> ${nombreCorto} (inactivo)`;
+                console.log('[dashboard] actualizando con dispositivo inactivo (prueba):', nuevoContenido);
+                statusText.innerHTML = nuevoContenido;
+            } else {
+                // No hay dispositivos
+                const nuevoContenido = '<i class="bi bi-plus-circle"></i> Agregar dispositivo';
+                console.log('[dashboard] actualizando sin dispositivos (prueba):', nuevoContenido);
+                statusText.innerHTML = nuevoContenido;
+            }
+        } else {
+            console.warn('[dashboard] No se encontró el elemento small.opacity-75 (prueba)');
+        }
+    } else {
+        console.warn('[dashboard] No se encontró el card-body (prueba)');
+    }
+    
+    // Guardar dispositivos en variable global
+    window.userDevices = dispositivos;
 }
 
 // Cargar datos de luces
@@ -622,6 +789,107 @@ async function cerrarSesion() {
 }
 
 // ============================================
+// FUNCIONES DE DEBUG
+// ============================================
+
+// Función para probar la actualización de dispositivos manualmente
+window.debugDispositivos = function() {
+    console.log('=== DEBUG DISPOSITIVOS ===');
+    const totalDispositivosEl = document.getElementById('total-dispositivos');
+    const cardBody = totalDispositivosEl ? totalDispositivosEl.closest('.card-body') : null;
+    const statusText = cardBody ? cardBody.querySelector('small.opacity-75') : null;
+    
+    console.log('Elementos encontrados:');
+    console.log('- total-dispositivos:', !!totalDispositivosEl);
+    console.log('- card-body:', !!cardBody);
+    console.log('- small.opacity-75:', !!statusText);
+    
+    if (statusText) {
+        console.log('- contenido actual del small:', statusText.innerHTML);
+        console.log('- clases del small:', statusText.className);
+        
+        // Probar actualización manual
+        statusText.innerHTML = '<i class="bi bi-circle-fill text-success"></i> ESP32 Test (DEBUG)';
+        console.log('- contenido después de actualización:', statusText.innerHTML);
+    }
+    
+    return { totalDispositivosEl, cardBody, statusText };
+};
+
+// Función para forzar datos de prueba
+window.testDispositivos = function() {
+    cargarDispositivosPrueba();
+};
+
+// Función para decodificar el token JWT
+window.debugToken = function() {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (!token) {
+        console.error('No hay token disponible');
+        return null;
+    }
+    
+    try {
+        // Decodificar el JWT sin verificar la firma (solo para debug)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('=== TOKEN JWT DECODIFICADO ===');
+        console.log('Payload completo:', payload);
+        console.log('User ID (id):', payload.id);
+        console.log('User ID (userId):', payload.userId);
+        console.log('Username:', payload.username);
+        console.log('Expira en:', new Date(payload.exp * 1000));
+        return payload;
+    } catch (error) {
+        console.error('Error decodificando token:', error);
+        return null;
+    }
+};
+
+// Función para probar la API directamente
+window.testAPI = async function() {
+    console.log('=== TEST API DISPOSITIVOS ===');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    console.log('Token disponible:', !!token);
+    
+    // Debug del token
+    const tokenData = debugToken();
+    if (tokenData) {
+        console.log('User ID del token (id):', tokenData.id);
+        console.log('User ID del token (userId):', tokenData.userId);
+    }
+    
+    if (!token) {
+        console.error('No hay token de autenticación');
+        return;
+    }
+    
+    try {
+        const response = await fetch('http://localhost:3000/api/dispositivos', {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('Status:', response.status);
+        console.log('Headers:', response.headers);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            return;
+        }
+        
+        const data = await response.json();
+        console.log('Dispositivos desde API:', data);
+        return data;
+    } catch (error) {
+        console.error('Error en petición:', error);
+    }
+};
+
+// ============================================
 // EVENT LISTENERS
 // ============================================
 
@@ -689,39 +957,78 @@ function initAddDeviceUI() {
     });
 
     submitBtn.addEventListener('click', async () => {
+        // Obtener valores de todos los campos
         const name = document.getElementById('device-name').value.trim();
         const type = document.getElementById('device-type').value.trim();
+        const location = document.getElementById('device-location').value.trim();
+        const identifier = document.getElementById('device-identifier').value.trim();
         const desc = document.getElementById('device-desc').value.trim();
 
+        // Validaciones
         if (!name) {
             mostrarAlerta('El nombre del dispositivo es obligatorio', 'warning', 2500);
+            document.getElementById('device-name').focus();
             return;
         }
 
-        // Aquí puedes llamar a tu API real para crear el dispositivo.
-        // Por ahora simulamos la creación y actualizamos el contador.
+        if (!type) {
+            mostrarAlerta('El tipo de dispositivo es obligatorio', 'warning', 2500);
+            document.getElementById('device-type').focus();
+            return;
+        }
+
+        if (!location) {
+            mostrarAlerta('La ubicación del dispositivo es obligatoria', 'warning', 2500);
+            document.getElementById('device-location').focus();
+            return;
+        }
+
+        // Llamar a la API para crear el dispositivo
         try {
-            // ejemplo de POST real:
-            // const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-            // const res = await fetch(`${API_URL}/dispositivos`, {
-            //     method: 'POST',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //         'Authorization': 'Bearer ' + token
-            //     },
-            //     body: JSON.stringify({ nombre: name, tipo: type, descripcion: desc })
-            // });
+            console.log('[add-device] Creando dispositivo:', { name, type, location, identifier, desc });
+            
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            if (!token) {
+                mostrarAlerta('Error de autenticación. Inicia sesión nuevamente.', 'danger', 3000);
+                return;
+            }
+            
+            // Construir payload con todos los campos
+            const payload = {
+                nombre: name,
+                tipo: type,
+                ubicacion: location,
+                descripcion: desc || null
+            };
+            
+            // Solo agregar identificador si se proporcionó
+            if (identifier) {
+                payload.identificador_unico = identifier;
+            }
+            
+            const res = await fetch(`${API_URL}/dispositivos`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(payload)
+            });
 
-            // if (!res.ok) throw new Error('Error creando dispositivo');
-
-            // Simulación: esperar 500ms
-            await new Promise(r => setTimeout(r, 500));
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Error creando dispositivo');
+            }
+            
+            const newDevice = await res.json();
+            console.log('[add-device] Dispositivo creado exitosamente:', newDevice);
 
             mostrarAlerta('Dispositivo agregado correctamente', 'success', 2000);
-            // cerrar modal
+            
+            // Cerrar modal
             addDeviceModalInstance.hide();
 
-            // refrescar conteo de dispositivos
+            // Refrescar datos de dispositivos
             await cargarDispositivos();
         } catch (e) {
             console.error('[add-device] error agregando dispositivo:', e);
