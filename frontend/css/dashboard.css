@@ -54,6 +54,14 @@ body {
 .stat-card {
     position: relative;
     overflow: hidden;
+    min-height: 140px; /* Altura mínima consistente */
+}
+
+.stat-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 120px; /* Altura mínima del contenido */
 }
 
 .stat-card::before {
@@ -371,23 +379,57 @@ body {
    NAVEGACIÓN DE DISPOSITIVOS
    ======================================== */
 
-#btn-next-device {
+#btn-next-device, #btn-add-device {
     transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
     background: rgba(255, 255, 255, 0.1) !important;
     backdrop-filter: blur(10px);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-#btn-next-device:hover {
+#btn-next-device:hover, #btn-add-device:hover {
     background: rgba(255, 255, 255, 0.2) !important;
     border-color: rgba(255, 255, 255, 0.5) !important;
     transform: scale(1.05);
 }
 
-#btn-next-device:active {
+#btn-next-device:active, #btn-add-device:active {
     transform: scale(0.95);
 }
 
-#btn-next-device i {
+#btn-next-device i, #btn-add-device i {
     font-size: 14px;
+}
+
+/* ========================================
+   TARJETAS PRINCIPALES - ALTURA CONSISTENTE
+   ======================================== */
+
+#dispositivo-nombre {
+    font-size: 1.4rem !important;
+    line-height: 1.3 !important;
+    min-height: 1.8rem;
+    max-height: 3.6rem; /* Máximo 2 líneas */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* Asegurar altura consistente en todas las tarjetas principales */
+.row.g-4.mb-4:first-of-type .stat-card {
+    height: 140px;
+}
+
+.row.g-4.mb-4:first-of-type .stat-card .card-body {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
