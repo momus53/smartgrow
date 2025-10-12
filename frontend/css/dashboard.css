@@ -289,3 +289,66 @@ body {
     background-color: rgba(255, 255, 255, 0.9) !important;
     transform: scale(1.05);
 }
+
+/* ========================================
+   BOMBILLAS TOGGLE STYLES
+   ======================================== */
+
+.bulb-toggle {
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.bulb-toggle:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: scale(1.05);
+}
+
+.bulb-toggle.on {
+    background: rgba(255, 255, 0, 0.9);
+    border-color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 255, 0, 0.4);
+}
+
+.bulb-toggle.off {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.bulb-toggle .bulb-icon {
+    font-size: 20px;
+    transition: all 0.3s ease;
+}
+
+.bulb-toggle.on .bulb-icon {
+    color: #333;
+    text-shadow: 0 0 5px rgba(255, 255, 0, 0.8);
+}
+
+.bulb-toggle.off .bulb-icon {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.bulb-toggle.loading {
+    animation: bulb-pulse 1.5s infinite;
+}
+
+@keyframes bulb-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+#luces-container {
+    min-height: 50px;
+    align-items: center;
+}

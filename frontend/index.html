@@ -98,11 +98,12 @@
                     <div class="card-body">
                         <i class="bi bi-lightbulb stat-icon"></i>
                         <h6 class="card-subtitle mb-2 opacity-75">
-                            <i class="bi bi-lightbulb"></i> Estado de Luces
+                            <i class="bi bi-lightbulb"></i> Control de Luces
                         </h6>
-                        <h2 class="stat-value" id="luces-encendidas">--</h2>
-                        <p class="mb-0">encendidas</p>
-                        <small class="opacity-75" id="luces-apagadas">-- apagadas</small>
+                        <div id="luces-container" class="d-flex flex-wrap gap-2 mb-2">
+                            <!-- Las bombillas se generarán dinámicamente aquí -->
+                        </div>
+                        <small class="opacity-75" id="luces-status">Cargando...</small>
                     </div>
                 </div>
             </div>

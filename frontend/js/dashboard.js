@@ -431,45 +431,135 @@ function cargarDispositivosPrueba() {
     window.userDevices = dispositivos;
 }
 
-// Cargar datos de luces
+// Cargar datos de luces con bombillas individuales
 async function cargarDatosLuces() {
     try {
         console.log('[dashboard] cargarDatosLuces iniciado');
         
-        // Simular datos de luces dinámicos (puedes conectar con tu API real)
-        const hora = new Date().getHours();
-        // Simular más luces encendidas durante el día (6AM - 10PM)
-        const encendidas = (hora >= 6 && hora <= 22) ? Math.floor(Math.random() * 3) + 3 : Math.floor(Math.random() * 2) + 1;
-        const apagadas = 8 - encendidas; // Supongamos 8 luces totales
+        // Definir configuración de luces (puedes conectar con tu API real)
+        const totalLuces = 6; // Número total de luces en el sistema
+        const estadoLuces = [];
         
-        const lucesData = {
-            encendidas: encendidas,
-            apagadas: apagadas
-        };
-        
-        console.log('[dashboard] datos de luces:', lucesData);
-        
-        const lucesEncendidas = document.getElementById('luces-encendidas');
-        const lucesApagadas = document.getElementById('luces-apagadas');
-        
-        console.log('[dashboard] elementos encontrados - encendidas:', !!lucesEncendidas, 'apagadas:', !!lucesApagadas);
-        
-        if (lucesEncendidas) {
-            lucesEncendidas.textContent = lucesData.encendidas;
-            console.log('[dashboard] actualizado luces encendidas:', lucesData.encendidas);
+        // Definir estados fijos de luces (puedes conectar con tu API real)
+        for (let i = 0; i < totalLuces; i++) {
+            estadoLuces.push({
+                id: i + 1,
+                nombre: `Luz ${i + 1}`,
+                encendida: false, // Estado inicial apagado - se mantendrá hasta que el usuario lo cambie
+                ubicacion: ['Invernadero A', 'Invernadero B', 'Jardín Principal', 'Área de Semillas', 'Zona de Trabajo', 'Entrada'][i]
+            });
         }
-        if (lucesApagadas) {
-            lucesApagadas.textContent = `${lucesData.apagadas} apagadas`;
-            console.log('[dashboard] actualizado luces apagadas:', lucesData.apagadas);
-        }
+        
+        console.log('[dashboard] estados de luces:', estadoLuces);
+        
+        // Actualizar la UI con bombillas
+        actualizarBombillas(estadoLuces);
         
     } catch (error) {
         console.error('Error cargando datos de luces:', error);
-        const lucesEncendidas = document.getElementById('luces-encendidas');
-        const lucesApagadas = document.getElementById('luces-apagadas');
+        mostrarErrorLuces();
+    }
+}
+
+// Actualizar la interfaz con bombillas toggle
+function actualizarBombillas(estadoLuces) {
+    const container = document.getElementById('luces-container');
+    const statusElement = document.getElementById('luces-status');
+    
+    if (!container || !statusElement) {
+        console.error('No se encontraron los elementos de luces');
+        return;
+    }
+    
+    // Limpiar contenedor
+    container.innerHTML = '';
+    
+    // Generar bombillas
+    estadoLuces.forEach(luz => {
+        const bulbButton = document.createElement('button');
+        bulbButton.className = `bulb-toggle ${luz.encendida ? 'on' : 'off'}`;
+        bulbButton.setAttribute('data-light-id', luz.id);
+        bulbButton.setAttribute('title', `${luz.nombre} - ${luz.ubicacion}`);
         
-        if (lucesEncendidas) lucesEncendidas.textContent = '--';
-        if (lucesApagadas) lucesApagadas.textContent = '-- apagadas';
+        const icon = document.createElement('i');
+        icon.className = `bi ${luz.encendida ? 'bi-lightbulb-fill' : 'bi-lightbulb'} bulb-icon`;
+        
+        bulbButton.appendChild(icon);
+        
+        // Agregar evento click para toggle
+        bulbButton.addEventListener('click', () => toggleLuz(luz.id, bulbButton));
+        
+        container.appendChild(bulbButton);
+    });
+    
+    // Actualizar estado
+    const encendidas = estadoLuces.filter(l => l.encendida).length;
+    const apagadas = estadoLuces.length - encendidas;
+    statusElement.textContent = `${encendidas} encendidas, ${apagadas} apagadas`;
+}
+
+// Función para alternar el estado de una luz
+async function toggleLuz(lightId, buttonElement) {
+    try {
+        // Mostrar estado de carga
+        buttonElement.classList.add('loading');
+        
+        // Simular llamada a API (reemplaza con tu endpoint real)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Alternar estado visual
+        const isCurrentlyOn = buttonElement.classList.contains('on');
+        const icon = buttonElement.querySelector('.bulb-icon');
+        
+        if (isCurrentlyOn) {
+            // Apagar luz
+            buttonElement.classList.remove('on');
+            buttonElement.classList.add('off');
+            icon.className = 'bi bi-lightbulb bulb-icon';
+        } else {
+            // Encender luz
+            buttonElement.classList.remove('off');
+            buttonElement.classList.add('on');
+            icon.className = 'bi bi-lightbulb-fill bulb-icon';
+        }
+        
+        // Actualizar contador
+        actualizarContadorLuces();
+        
+        console.log(`[luces] Luz ${lightId} ${isCurrentlyOn ? 'apagada' : 'encendida'}`);
+        
+    } catch (error) {
+        console.error('Error al cambiar estado de luz:', error);
+    } finally {
+        buttonElement.classList.remove('loading');
+    }
+}
+
+// Actualizar contador de luces
+function actualizarContadorLuces() {
+    const container = document.getElementById('luces-container');
+    const statusElement = document.getElementById('luces-status');
+    
+    if (!container || !statusElement) return;
+    
+    const bombillas = container.querySelectorAll('.bulb-toggle');
+    const encendidas = container.querySelectorAll('.bulb-toggle.on').length;
+    const apagadas = bombillas.length - encendidas;
+    
+    statusElement.textContent = `${encendidas} encendidas, ${apagadas} apagadas`;
+}
+
+// Mostrar error en las luces
+function mostrarErrorLuces() {
+    const container = document.getElementById('luces-container');
+    const statusElement = document.getElementById('luces-status');
+    
+    if (container) {
+        container.innerHTML = '<div class="text-white-50"><i class="bi bi-exclamation-triangle"></i> Error cargando</div>';
+    }
+    
+    if (statusElement) {
+        statusElement.textContent = 'Error de conexión';
     }
 }
 
