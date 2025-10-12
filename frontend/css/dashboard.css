@@ -366,3 +366,28 @@ body {
     min-height: 50px;
     align-items: center;
 }
+
+/* ========================================
+   NAVEGACIÓN DE DISPOSITIVOS
+   ======================================== */
+
+#btn-next-device {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px);
+}
+
+#btn-next-device:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    transform: scale(1.05);
+}
+
+#btn-next-device:active {
+    transform: scale(0.95);
+}
+
+#btn-next-device i {
+    font-size: 14px;
+}

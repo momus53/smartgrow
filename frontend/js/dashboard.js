@@ -4,6 +4,10 @@ const API_URL = 'http://localhost:3000/api';
 let chart = null;
 let updateInterval = null;
 
+// Variables para navegación de dispositivos
+let dispositivosActivos = [];
+let currentDeviceIndex = 0;
+
 // ============================================
 // INICIALIZACIÓN
 // ============================================
@@ -303,10 +307,28 @@ async function cargarDispositivos() {
         
         // Los contadores se actualizan en la lógica de tarjetas más abajo
         
-        // Actualizar la tarjeta con información detallada
-        const dispositivosActivos = dispositivos.filter(d => d.estado === 'activo');
+        // Actualizar dispositivos manteniendo la selección actual
+        const newDispositivosActivos = dispositivos.filter(d => d.estado === 'activo');
+        const previousDeviceId = dispositivosActivos.length > 0 && currentDeviceIndex >= 0 
+            ? dispositivosActivos[currentDeviceIndex]?.id 
+            : null;
+        
+        dispositivosActivos = newDispositivosActivos;
         console.log('[dashboard] dispositivos activos encontrados:', dispositivosActivos.length);
         console.log('[dashboard] todos los dispositivos:', dispositivos.map(d => ({ nombre: d.nombre, estado: d.estado })));
+        
+        // Preservar la selección del dispositivo actual si es posible
+        if (previousDeviceId && dispositivosActivos.length > 0) {
+            const previousIndex = dispositivosActivos.findIndex(d => d.id === previousDeviceId);
+            currentDeviceIndex = previousIndex >= 0 ? previousIndex : 0;
+            console.log(`[dashboard] Manteniendo dispositivo seleccionado: ${previousDeviceId} (índice: ${currentDeviceIndex})`);
+        } else {
+            currentDeviceIndex = 0;
+            console.log('[dashboard] Seleccionando primer dispositivo por defecto');
+        }
+        
+        // Mostrar/ocultar botón de siguiente según cantidad de dispositivos
+        updateNavigationButton();
         
         // Actualizar tarjeta de dispositivos
         const dispositivoNombre = document.getElementById('dispositivo-nombre');
@@ -315,18 +337,8 @@ async function cargarDispositivos() {
         
         if (dispositivoNombre && dispositivosCount && dispositivosStatus) {
             if (dispositivosActivos.length > 0) {
-                // Mostrar el nombre del primer dispositivo activo
-                const primerActivo = dispositivosActivos[0];
-                const nombreCompleto = primerActivo.nombre.length > 25 
-                    ? primerActivo.nombre.substring(0, 25) + '...' 
-                    : primerActivo.nombre;
-                
-                dispositivoNombre.innerHTML = `<i class="bi bi-circle-fill text-success me-2"></i>${nombreCompleto}`;
-                dispositivosCount.textContent = `${dispositivosActivos.length} activos`;
-                dispositivosStatus.innerHTML = 'Conectados';
-                
-                // Actualizar tarjetas de temperatura y humedad
-                actualizarTarjetasSensores(primerActivo);
+                updateDeviceDisplay();
+                updateDeviceSensorData();
                 
             } else if (dispositivos.length > 0) {
                 // Hay dispositivos pero ninguno activo
@@ -427,8 +439,120 @@ function cargarDispositivosPrueba() {
         }
     }
     
-    // Guardar dispositivos en variable global
-    window.userDevices = dispositivos;
+    // Actualizar dispositivos manteniendo la selección actual
+    const newDispositivosActivos = dispositivos.filter(d => d.estado === 'activo');
+    const previousDeviceId = dispositivosActivos.length > 0 && currentDeviceIndex >= 0 
+        ? dispositivosActivos[currentDeviceIndex]?.id 
+        : null;
+    
+    dispositivosActivos = newDispositivosActivos;
+    
+    // Preservar la selección del dispositivo actual si es posible
+    if (previousDeviceId && dispositivosActivos.length > 0) {
+        const previousIndex = dispositivosActivos.findIndex(d => d.id === previousDeviceId);
+        currentDeviceIndex = previousIndex >= 0 ? previousIndex : 0;
+        console.log(`[dashboard] Manteniendo dispositivo seleccionado (prueba): ${previousDeviceId} (índice: ${currentDeviceIndex})`);
+    } else {
+        currentDeviceIndex = 0;
+        console.log('[dashboard] Seleccionando primer dispositivo por defecto (prueba)');
+    }
+    
+    // Mostrar/ocultar botón de siguiente según cantidad de dispositivos
+    updateNavigationButton();
+}
+
+// ============================================
+// NAVEGACIÓN DE DISPOSITIVOS
+// ============================================
+
+// Función para mostrar/ocultar el botón de navegación
+function updateNavigationButton() {
+    const nextButton = document.getElementById('btn-next-device');
+    if (nextButton) {
+        if (dispositivosActivos.length > 1) {
+            nextButton.style.display = 'block';
+        } else {
+            nextButton.style.display = 'none';
+        }
+    }
+}
+
+// Función para avanzar al siguiente dispositivo
+function nextDevice() {
+    if (dispositivosActivos.length <= 1) return;
+    
+    const previousIndex = currentDeviceIndex;
+    currentDeviceIndex = (currentDeviceIndex + 1) % dispositivosActivos.length;
+    
+    const currentDevice = dispositivosActivos[currentDeviceIndex];
+    console.log(`[navegación] Cambiando de dispositivo ${previousIndex + 1} a ${currentDeviceIndex + 1}: ${currentDevice.nombre}`);
+    
+    updateDeviceDisplay();
+    updateDeviceSensorData();
+}
+
+// Actualizar la visualización del dispositivo actual
+function updateDeviceDisplay() {
+    if (dispositivosActivos.length === 0) return;
+    
+    const currentDevice = dispositivosActivos[currentDeviceIndex];
+    const dispositivoNombre = document.getElementById('dispositivo-nombre');
+    const dispositivosCount = document.getElementById('dispositivos-activos-count');
+    const dispositivosStatus = document.getElementById('dispositivos-status');
+    
+    if (dispositivoNombre && dispositivosCount && dispositivosStatus) {
+        const nombreCompleto = currentDevice.nombre.length > 25 
+            ? currentDevice.nombre.substring(0, 25) + '...' 
+            : currentDevice.nombre;
+        
+        dispositivoNombre.innerHTML = `<i class="bi bi-circle-fill text-success me-2"></i>${nombreCompleto}`;
+        dispositivosCount.textContent = `${currentDeviceIndex + 1} de ${dispositivosActivos.length} activos`;
+        dispositivosStatus.innerHTML = `${currentDevice.ubicacion || 'Ubicación no definida'}`;
+    }
+}
+
+// Actualizar datos de sensores según dispositivo actual
+function updateDeviceSensorData() {
+    if (dispositivosActivos.length === 0) return;
+    const currentDevice = dispositivosActivos[currentDeviceIndex];
+    // Usar los datos reales del backend
+    const tempElement = document.getElementById('temp-actual');
+    const tempTimeElement = document.getElementById('temp-time');
+    if (tempElement && tempTimeElement) {
+        // Manejar temperatura - puede ser number, string o null
+        let temp = '--';
+        if (currentDevice.temperatura_actual !== null && currentDevice.temperatura_actual !== undefined) {
+            const tempValue = parseFloat(currentDevice.temperatura_actual);
+            if (!isNaN(tempValue)) {
+                temp = tempValue.toFixed(1);
+            }
+        }
+        tempElement.textContent = temp;
+        tempTimeElement.textContent = currentDevice.fecha_ultima_lectura ? `Última lectura: ${new Date(currentDevice.fecha_ultima_lectura).toLocaleString()}` : `Dispositivo: ${currentDevice.nombre}`;
+    }
+    const humElement = document.getElementById('humedad-actual');
+    const humTimeElement = document.getElementById('humedad-time');
+    if (humElement && humTimeElement) {
+        // Manejar humedad - puede ser number, string o null
+        let hum = '--';
+        if (currentDevice.humedad_actual !== null && currentDevice.humedad_actual !== undefined) {
+            const humValue = parseFloat(currentDevice.humedad_actual);
+            if (!isNaN(humValue)) {
+                hum = humValue.toFixed(1); // Mostrar 1 decimal como la temperatura
+            }
+        }
+        humElement.textContent = hum;
+        humTimeElement.textContent = currentDevice.fecha_ultima_lectura ? `Última lectura: ${new Date(currentDevice.fecha_ultima_lectura).toLocaleString()}` : `Dispositivo: ${currentDevice.nombre}`;
+    }
+    console.log(`[dispositivos] Mostrando datos de ${currentDevice.nombre}:`, {
+        temperatura_raw: currentDevice.temperatura_actual,
+        temperatura_parsed: parseFloat(currentDevice.temperatura_actual),
+        humedad_raw: currentDevice.humedad_actual,
+        humedad_parsed: parseFloat(currentDevice.humedad_actual),
+        fecha: currentDevice.fecha_ultima_lectura,
+        temp_displayed: tempElement ? tempElement.textContent : 'N/A',
+        hum_displayed: humElement ? humElement.textContent : 'N/A'
+    });
 }
 
 // Cargar datos de luces con bombillas individuales
