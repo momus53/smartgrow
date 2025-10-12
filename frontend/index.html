@@ -70,8 +70,9 @@
                         <h6 class="card-subtitle mb-2 opacity-75">
                             <i class="bi bi-thermometer"></i> Temperatura Actual
                         </h6>
-                        <h2 class="stat-value" id="temp-actual">--</h2>
-                        <p class="mb-0">°C</p>
+                        <h2 class="stat-value">
+                            <span id="temp-actual">--</span><span class="unit-symbol">°C</span>
+                        </h2>
                         <small class="opacity-75" id="temp-time">Esperando datos...</small>
                     </div>
                 </div>
@@ -85,8 +86,9 @@
                         <h6 class="card-subtitle mb-2 opacity-75">
                             <i class="bi bi-droplet"></i> Humedad Actual
                         </h6>
-                        <h2 class="stat-value" id="humedad-actual">--</h2>
-                        <p class="mb-0">%</p>
+                        <h2 class="stat-value">
+                            <span id="humedad-actual">--</span><span class="unit-symbol">%</span>
+                        </h2>
                         <small class="opacity-75" id="humedad-time">Esperando datos...</small>
                     </div>
                 </div>
@@ -169,37 +171,49 @@
                             <div class="col-6 col-md-4 col-lg-2">
                                 <div class="stat-mini">
                                     <div class="stat-mini-label">Temp. Promedio</div>
-                                    <div class="stat-mini-value" id="temp-promedio">--</div>
+                                    <div class="stat-mini-value">
+                                        <span id="temp-promedio">--</span><span class="unit-mini">°C</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-6 col-md-4 col-lg-2">
                                 <div class="stat-mini">
                                     <div class="stat-mini-label">Temp. Máxima</div>
-                                    <div class="stat-mini-value" id="temp-maxima">--</div>
+                                    <div class="stat-mini-value">
+                                        <span id="temp-maxima">--</span><span class="unit-mini">°C</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-6 col-md-4 col-lg-2">
                                 <div class="stat-mini">
                                     <div class="stat-mini-label">Temp. Mínima</div>
-                                    <div class="stat-mini-value" id="temp-minima">--</div>
+                                    <div class="stat-mini-value">
+                                        <span id="temp-minima">--</span><span class="unit-mini">°C</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-6 col-md-4 col-lg-2">
                                 <div class="stat-mini">
                                     <div class="stat-mini-label">Hum. Promedio</div>
-                                    <div class="stat-mini-value" id="humedad-promedio">--</div>
+                                    <div class="stat-mini-value">
+                                        <span id="humedad-promedio">--</span><span class="unit-mini">%</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-6 col-md-4 col-lg-2">
                                 <div class="stat-mini">
                                     <div class="stat-mini-label">Hum. Máxima</div>
-                                    <div class="stat-mini-value" id="humedad-maxima">--</div>
+                                    <div class="stat-mini-value">
+                                        <span id="humedad-maxima">--</span><span class="unit-mini">%</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-6 col-md-4 col-lg-2">
                                 <div class="stat-mini">
                                     <div class="stat-mini-label">Hum. Mínima</div>
-                                    <div class="stat-mini-value" id="humedad-minima">--</div>
+                                    <div class="stat-mini-value">
+                                        <span id="humedad-minima">--</span><span class="unit-mini">%</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

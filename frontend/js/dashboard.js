@@ -437,7 +437,7 @@ async function cargarDatosLuces() {
         console.log('[dashboard] cargarDatosLuces iniciado');
         
         // Definir configuración de luces (puedes conectar con tu API real)
-        const totalLuces = 6; // Número total de luces en el sistema
+        const totalLuces = 3; // Número total de luces en el sistema
         const estadoLuces = [];
         
         // Definir estados fijos de luces (puedes conectar con tu API real)

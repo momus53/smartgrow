@@ -74,6 +74,13 @@ body {
     margin: 0;
 }
 
+.unit-symbol {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-left: 0.2rem;
+    opacity: 0.9;
+}
+
 .stat-icon {
     font-size: 3rem;
     opacity: 0.2;
@@ -127,6 +134,13 @@ body {
 
 .stat-mini-label {
     font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.unit-mini {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-left: 0.1rem;
     opacity: 0.9;
 }
 
