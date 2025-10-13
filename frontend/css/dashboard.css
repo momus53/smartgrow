@@ -26,6 +26,17 @@ body {
     box-shadow: 0 2px 20px rgba(0,0,0,0.1);
 }
 
+/* Estilo para la hora en el navbar */
+#last-update {
+    font-weight: 700 !important;
+    text-align: center !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1rem;
+    color: #495057 !important;
+}
+
 .status-badge {
     animation: pulse-animation 2s infinite;
 }
@@ -639,12 +650,7 @@ body {
     color: #6c757d;
 }
 
-/* Badge de tiempo actual */
-#current-time-display {
-    font-size: 14px;
-    font-weight: 600;
-    padding: 8px 12px;
-}
+/* Badge eliminado - ya no se usa */
 
 /* Responsive */
 @media (max-width: 768px) {

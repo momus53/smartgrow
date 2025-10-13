@@ -1352,9 +1352,7 @@ function initTimeSlider() {
         updateTimeDisplay(currentMinutes);
     }
     
-    // Actualizar la hora actual cada minuto
-    updateCurrentTimeDisplay();
-    setInterval(updateCurrentTimeDisplay, 60000);
+    // Ya no se necesita actualizar la hora en el control
     
     console.log('[time-slider] Slider de tiempo inicializado');
 }
@@ -1461,19 +1459,7 @@ function applyManualTime() {
     }
 }
 
-// Actualizar la visualización de la hora actual
-function updateCurrentTimeDisplay() {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('es-ES', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-    });
-    
-    const currentTimeDisplay = document.getElementById('current-time-display');
-    if (currentTimeDisplay) {
-        currentTimeDisplay.textContent = timeString;
-    }
-}
+// Función eliminada - ya no se necesita la hora en el control de horas
 
 // Inicializar UI adicional después de cargar
 document.addEventListener('DOMContentLoaded', () => {
