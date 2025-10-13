@@ -1336,7 +1336,147 @@ function limpiarTarjetasSensores() {
     }
 }
 
+// ============================================
+// SLIDER DE 24 HORAS
+// ============================================
+
+// Inicializar el slider de tiempo
+function initTimeSlider() {
+    // Establecer la hora actual al cargar
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    
+    const slider = document.getElementById('hour-slider');
+    if (slider) {
+        slider.value = currentMinutes;
+        updateTimeDisplay(currentMinutes);
+    }
+    
+    // Actualizar la hora actual cada minuto
+    updateCurrentTimeDisplay();
+    setInterval(updateCurrentTimeDisplay, 60000);
+    
+    console.log('[time-slider] Slider de tiempo inicializado');
+}
+
+// Actualizar la visualización del tiempo basado en el valor del slider
+function updateTimeDisplay(minutes) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    // Formatear tiempo
+    const timeString = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+    
+    // Actualizar tiempo seleccionado
+    const selectedTimeElement = document.getElementById('selected-time');
+    if (selectedTimeElement) {
+        selectedTimeElement.textContent = timeString;
+    }
+    
+    // Determinar período del día
+    const period = getTimePeriod(hours);
+    const periodElement = document.getElementById('time-period');
+    if (periodElement) {
+        periodElement.textContent = period.name;
+    }
+    
+    // Determinar estado de luz (día/noche)
+    const daylightStatus = getDaylightStatus(hours);
+    const daylightElement = document.getElementById('daylight-status');
+    if (daylightElement) {
+        daylightElement.innerHTML = daylightStatus.icon + ' ' + daylightStatus.text;
+    }
+    
+    console.log(`[time-slider] Tiempo actualizado: ${timeString} - ${period.name}`);
+}
+
+// Obtener período del día
+function getTimePeriod(hour) {
+    if (hour >= 0 && hour < 5) return { name: 'Madrugada', class: 'night' };
+    if (hour >= 5 && hour < 7) return { name: 'Amanecer', class: 'dawn' };
+    if (hour >= 7 && hour < 12) return { name: 'Mañana', class: 'morning' };
+    if (hour >= 12 && hour < 14) return { name: 'Mediodía', class: 'noon' };
+    if (hour >= 14 && hour < 18) return { name: 'Tarde', class: 'afternoon' };
+    if (hour >= 18 && hour < 20) return { name: 'Atardecer', class: 'dusk' };
+    return { name: 'Noche', class: 'night' };
+}
+
+// Obtener estado de luz natural
+function getDaylightStatus(hour) {
+    if (hour >= 6 && hour < 19) {
+        return {
+            icon: '<i class="bi bi-sun text-warning"></i>',
+            text: 'Día'
+        };
+    } else if (hour >= 19 && hour < 21) {
+        return {
+            icon: '<i class="bi bi-sunset text-orange"></i>',
+            text: 'Atardecer'
+        };
+    } else if (hour >= 5 && hour < 6) {
+        return {
+            icon: '<i class="bi bi-sunrise text-orange"></i>',
+            text: 'Amanecer'
+        };
+    } else {
+        return {
+            icon: '<i class="bi bi-moon text-info"></i>',
+            text: 'Noche'
+        };
+    }
+}
+
+// Saltar a una hora específica
+function jumpToTime(minutes) {
+    const slider = document.getElementById('hour-slider');
+    if (slider) {
+        slider.value = minutes;
+        updateTimeDisplay(minutes);
+    }
+}
+
+// Resetear a la hora actual
+function resetToCurrentTime() {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    jumpToTime(currentMinutes);
+    console.log('[time-slider] Reseteado a hora actual');
+}
+
+// Establecer tiempo manual desde input
+function setManualTime(timeValue) {
+    if (!timeValue) return;
+    
+    const [hours, minutes] = timeValue.split(':').map(Number);
+    const totalMinutes = hours * 60 + minutes;
+    jumpToTime(totalMinutes);
+}
+
+// Aplicar tiempo manual
+function applyManualTime() {
+    const manualInput = document.getElementById('manual-time-input');
+    if (manualInput && manualInput.value) {
+        setManualTime(manualInput.value);
+        console.log('[time-slider] Tiempo manual aplicado:', manualInput.value);
+    }
+}
+
+// Actualizar la visualización de la hora actual
+function updateCurrentTimeDisplay() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+    
+    const currentTimeDisplay = document.getElementById('current-time-display');
+    if (currentTimeDisplay) {
+        currentTimeDisplay.textContent = timeString;
+    }
+}
+
 // Inicializar UI adicional después de cargar
 document.addEventListener('DOMContentLoaded', () => {
     initAddDeviceUI();
+    initTimeSlider(); // Inicializar el slider de tiempo
 });

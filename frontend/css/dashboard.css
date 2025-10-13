@@ -433,3 +433,234 @@ body {
     flex-direction: column;
     justify-content: space-between;
 }
+
+/* ========================================
+   SLIDER DE 24 HORAS
+   ======================================== */
+
+.time-slider-container {
+    padding: 20px 0;
+}
+
+.time-info {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.time-display h2, .period-display h4, .daylight-display h4 {
+    color: #495057;
+    font-weight: 600;
+}
+
+.hour-slider-wrapper {
+    position: relative;
+    padding: 40px 0 60px 0;
+    margin: 20px 0;
+}
+
+/* Slider principal */
+.hour-slider {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(
+        90deg,
+        #1a1a2e 0%,      /* Noche */
+        #16213e 12.5%,   /* Madrugada */
+        #0f3460 25%,     /* Amanecer */
+        #ffd89b 37.5%,   /* Mañana */
+        #19547b 50%,     /* Mediodía */
+        #ffd89b 62.5%,   /* Tarde */
+        #ff6b6b 75%,     /* Atardecer */
+        #1a1a2e 87.5%,   /* Anochecer */
+        #1a1a2e 100%     /* Noche */
+    );
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.hour-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #007bff;
+    border: 3px solid white;
+    box-shadow: 0 2px 10px rgba(0, 123, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.hour-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.5);
+}
+
+.hour-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #007bff;
+    border: 3px solid white;
+    box-shadow: 0 2px 10px rgba(0, 123, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Marcas de horas */
+.hour-marks {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hour-mark {
+    position: relative;
+    flex: 1;
+    text-align: center;
+}
+
+.hour-mark::before {
+    content: '';
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 15px;
+    background: #6c757d;
+    border-radius: 1px;
+}
+
+.hour-mark span {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* Períodos del día */
+.day-periods {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    height: 30px;
+    display: flex;
+}
+
+.period {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+}
+
+.period span {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+.period.night {
+    background: rgba(26, 26, 46, 0.1);
+    color: #1a1a2e;
+    flex: 0.75;
+}
+
+.period.dawn {
+    background: rgba(15, 52, 96, 0.1);
+    color: #0f3460;
+    flex: 0.5;
+}
+
+.period.morning {
+    background: rgba(255, 216, 155, 0.2);
+    color: #d4840a;
+    flex: 1.5;
+}
+
+.period.noon {
+    background: rgba(25, 84, 123, 0.1);
+    color: #19547b;
+    flex: 1;
+}
+
+.period.afternoon {
+    background: rgba(255, 216, 155, 0.2);
+    color: #d4840a;
+    flex: 1.5;
+}
+
+.period.dusk {
+    background: rgba(255, 107, 107, 0.1);
+    color: #ff6b6b;
+    flex: 0.5;
+}
+
+.period.night-end {
+    background: rgba(26, 26, 46, 0.1);
+    color: #1a1a2e;
+    flex: 0.75;
+}
+
+/* Controles de tiempo */
+.time-controls .btn-group .btn {
+    font-size: 12px;
+    padding: 8px 12px;
+}
+
+.time-controls .input-group {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.time-controls .form-control {
+    border: none;
+    box-shadow: none;
+}
+
+.time-controls .input-group-text {
+    background: #f8f9fa;
+    border: none;
+    color: #6c757d;
+}
+
+/* Badge de tiempo actual */
+#current-time-display {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hour-marks {
+        display: none;
+    }
+    
+    .period span {
+        font-size: 9px;
+    }
+    
+    .time-info .col-md-4 {
+        margin-bottom: 15px;
+    }
+    
+    .time-controls .row > div {
+        margin-bottom: 10px;
+    }
+}
