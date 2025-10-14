@@ -1352,7 +1352,6 @@ function initTimeSlider() {
         updateTimeDisplay(currentMinutes);
     }
     
-    // Ya no se necesita actualizar la hora en el control
     
     console.log('[time-slider] Slider de tiempo inicializado');
 }
@@ -1458,8 +1457,6 @@ function applyManualTime() {
         console.log('[time-slider] Tiempo manual aplicado:', manualInput.value);
     }
 }
-
-// Función eliminada - ya no se necesita la hora en el control de horas
 
 // Inicializar UI adicional después de cargar
 document.addEventListener('DOMContentLoaded', () => {
