@@ -650,7 +650,45 @@ body {
     color: #6c757d;
 }
 
-/* Badge eliminado - ya no se usa */
+/* ========================================
+   MODAL DE ALERTA DE HUMEDAD CRÍTICA
+   ======================================== */
+
+.modal-content {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.modal-header.bg-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+}
+
+.alert-icon {
+    animation: pulse-danger 2s infinite;
+}
+
+@keyframes pulse-danger {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+    }
+}
+
+.modal-body .alert {
+    border-left: 4px solid #ffc107;
+    background: rgba(255, 193, 7, 0.1);
+    border-radius: 8px;
+}
+
+#humedadCriticaModal .modal-footer .btn {
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 600;
+}
 
 /* Responsive */
 @media (max-width: 768px) {

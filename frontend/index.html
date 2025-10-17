@@ -351,6 +351,49 @@
         </div>
     </div>
 
+    <!-- Modal de Alerta de Humedad Crítica -->
+    <div class="modal fade" id="humedadCriticaModal" tabindex="-1" aria-labelledby="humedadCriticaModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="humedadCriticaModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        ¡Alerta de Humedad Crítica!
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="alert-icon mb-3">
+                        <i class="bi bi-droplet-fill text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    <h4 class="text-danger mb-3">Humedad Peligrosamente Alta</h4>
+                    <p class="mb-3">
+                        <strong>Dispositivo:</strong> <span id="dispositivo-alerta">--</span><br>
+                        <strong>Humedad Actual:</strong> <span id="humedad-valor-alerta" class="text-danger fw-bold">--</span>%<br>
+                        <strong>Límite Crítico:</strong> <span id="limite-critico-display" class="text-warning fw-bold">85</span>%
+                    </p>
+                    <div class="alert alert-warning" role="alert">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Acción Recomendada:</strong> Revise inmediatamente el sistema de ventilación y drenaje. 
+                        Los niveles altos de humedad pueden causar hongos y enfermedades en las plantas.
+                    </div>
+                    <small class="text-muted">
+                        <i class="bi bi-clock me-1"></i>
+                        Detectado: <span id="tiempo-deteccion">--</span>
+                    </small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-bell-slash"></i> Silenciar por 1 hora
+                    </button>
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                        <i class="bi bi-check-lg"></i> Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     

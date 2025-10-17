@@ -330,6 +330,9 @@ async function cargarDispositivos() {
         // Mostrar/ocultar botón de siguiente según cantidad de dispositivos
         updateNavigationButton();
         
+        // Verificar humedad crítica en todos los dispositivos
+        verificarHumedadCriticaTodos();
+        
         // Actualizar tarjeta de dispositivos
         const dispositivoNombre = document.getElementById('dispositivo-nombre');
         const dispositivosCount = document.getElementById('dispositivos-activos-count');
@@ -391,11 +394,38 @@ async function cargarDispositivos() {
 function cargarDispositivosPrueba() {
     console.log('[dashboard] usando datos de prueba para dispositivos');
     
-    // Datos de prueba
+    // Datos de prueba con sensores
     const dispositivos = [
-        { id: 1, nombre: 'ESP32 Principal', estado: 'activo', tipo: 'ESP32', ubicacion: 'Invernadero A' },
-        { id: 2, nombre: 'Arduino Sensor Exterior', estado: 'inactivo', tipo: 'Arduino', ubicacion: 'Jardín' },
-        { id: 3, nombre: 'Raspberry Pi Monitor', estado: 'activo', tipo: 'Raspberry Pi', ubicacion: 'Laboratorio' }
+        { 
+            id: 1, 
+            nombre: 'ESP32 Principal', 
+            estado: 'activo', 
+            tipo: 'ESP32', 
+            ubicacion: 'Invernadero A',
+            humedad_actual: 88.5, // Humedad crítica para probar alerta
+            temperatura_actual: 25.3,
+            fecha_ultima_lectura: new Date().toISOString()
+        },
+        { 
+            id: 2, 
+            nombre: 'Arduino Sensor Exterior', 
+            estado: 'inactivo', 
+            tipo: 'Arduino', 
+            ubicacion: 'Jardín',
+            humedad_actual: 65.2,
+            temperatura_actual: 22.1,
+            fecha_ultima_lectura: new Date().toISOString()
+        },
+        { 
+            id: 3, 
+            nombre: 'Raspberry Pi Monitor', 
+            estado: 'activo', 
+            tipo: 'Raspberry Pi', 
+            ubicacion: 'Laboratorio',
+            humedad_actual: 72.8,
+            temperatura_actual: 24.7,
+            fecha_ultima_lectura: new Date().toISOString()
+        }
     ];
     
     // Actualizar la tarjeta con información detallada
@@ -459,6 +489,9 @@ function cargarDispositivosPrueba() {
     
     // Mostrar/ocultar botón de siguiente según cantidad de dispositivos
     updateNavigationButton();
+    
+    // Verificar humedad crítica en dispositivos de prueba
+    verificarHumedadCriticaTodos();
 }
 
 // ============================================
@@ -535,10 +568,14 @@ function updateDeviceSensorData() {
     if (humElement && humTimeElement) {
         // Manejar humedad - puede ser number, string o null
         let hum = '--';
+        let humValue = null;
         if (currentDevice.humedad_actual !== null && currentDevice.humedad_actual !== undefined) {
-            const humValue = parseFloat(currentDevice.humedad_actual);
+            humValue = parseFloat(currentDevice.humedad_actual);
             if (!isNaN(humValue)) {
                 hum = humValue.toFixed(1); // Mostrar 1 decimal como la temperatura
+                
+                // Verificar si la humedad es crítica
+                verificarHumedadCritica(humValue, currentDevice);
             }
         }
         humElement.textContent = hum;
@@ -1458,8 +1495,176 @@ function applyManualTime() {
     }
 }
 
+// ============================================
+// SISTEMA DE ALERTAS DE HUMEDAD CRÍTICA
+// ============================================
+
+// Configuración de alerta
+const HUMEDAD_CRITICA = 85; // Porcentaje crítico de humedad
+let alertaSilenciada = false;
+let tiempoSilencio = null;
+let modalAlertaActivo = false; // Evitar múltiples modales
+
+// Verificar humedad crítica en todos los dispositivos
+function verificarHumedadCriticaTodos() {
+    if (!dispositivosActivos || dispositivosActivos.length === 0) return;
+    
+    let dispositivoMasCritico = null;
+    let humedadMaxima = 0;
+    
+    // Encontrar el dispositivo con mayor humedad crítica
+    dispositivosActivos.forEach(dispositivo => {
+        if (dispositivo.humedad_actual !== null && dispositivo.humedad_actual !== undefined) {
+            const humedad = parseFloat(dispositivo.humedad_actual);
+            if (!isNaN(humedad) && humedad >= HUMEDAD_CRITICA && humedad > humedadMaxima) {
+                humedadMaxima = humedad;
+                dispositivoMasCritico = dispositivo;
+            }
+        }
+    });
+    
+    // Solo mostrar alerta del dispositivo más crítico
+    if (dispositivoMasCritico) {
+        verificarHumedadCritica(humedadMaxima, dispositivoMasCritico);
+    }
+}
+
+// Verificar humedad crítica
+function verificarHumedadCritica(humedad, dispositivo) {
+    // Verificar si ya hay un modal activo
+    if (modalAlertaActivo) {
+        console.log('[alerta] Modal ya activo, evitando duplicado');
+        return;
+    }
+    
+    // Verificar si la alerta está silenciada
+    if (alertaSilenciada && tiempoSilencio) {
+        const tiempoTranscurrido = Date.now() - tiempoSilencio;
+        const unaHora = 60 * 60 * 1000; // 1 hora en milisegundos
+        
+        if (tiempoTranscurrido < unaHora) {
+            console.log('[alerta] Alerta silenciada por', Math.round((unaHora - tiempoTranscurrido) / 60000), 'minutos más');
+            return;
+        } else {
+            // Reactivar alertas después de 1 hora
+            alertaSilenciada = false;
+            tiempoSilencio = null;
+            console.log('[alerta] Alertas reactivadas después del período de silencio');
+        }
+    }
+    
+    // Verificar si la humedad es crítica
+    if (humedad >= HUMEDAD_CRITICA) {
+        mostrarAlertaHumedadCritica(humedad, dispositivo);
+    }
+}
+
+// Mostrar modal de alerta
+function mostrarAlertaHumedadCritica(humedad, dispositivo) {
+    console.log(`[alerta] Humedad crítica detectada: ${humedad}% en ${dispositivo.nombre}`);
+    
+    // Marcar modal como activo
+    modalAlertaActivo = true;
+    
+    // Actualizar contenido del modal
+    const dispositivoElement = document.getElementById('dispositivo-alerta');
+    const humedadElement = document.getElementById('humedad-valor-alerta');
+    const limiteCriticoElement = document.getElementById('limite-critico-display');
+    const tiempoDeteccionElement = document.getElementById('tiempo-deteccion');
+    
+    if (dispositivoElement) dispositivoElement.textContent = dispositivo.nombre;
+    if (humedadElement) humedadElement.textContent = humedad.toFixed(1);
+    if (limiteCriticoElement) limiteCriticoElement.textContent = HUMEDAD_CRITICA;
+    if (tiempoDeteccionElement) {
+        tiempoDeteccionElement.textContent = new Date().toLocaleString('es-ES', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    
+    // Verificar si el modal ya existe y está visible
+    const modalElement = document.getElementById('humedadCriticaModal');
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    
+    if (existingModal && modalElement.classList.contains('show')) {
+        console.log('[alerta] Modal ya visible, actualizando contenido solamente');
+        return;
+    }
+    
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(modalElement);
+    
+    // Agregar evento cuando se cierre el modal
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        modalAlertaActivo = false;
+        console.log('[alerta] Modal cerrado, permitiendo nuevas alertas');
+    }, { once: true });
+    
+    modal.show();
+    
+    // Reproducir sonido de alerta (opcional)
+    reproducirSonidoAlerta();
+}
+
+// Silenciar alerta por 1 hora
+function silenciarAlerta() {
+    alertaSilenciada = true;
+    tiempoSilencio = Date.now();
+    modalAlertaActivo = false; // Permitir nuevas alertas después del silencio
+    console.log('[alerta] Alerta silenciada por 1 hora');
+    
+    // Cerrar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('humedadCriticaModal'));
+    if (modal) modal.hide();
+}
+
+// Reproducir sonido de alerta (opcional)
+function reproducirSonidoAlerta() {
+    try {
+        // Crear un beep usando Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800; // Frecuencia del beep
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+        
+        console.log('[alerta] Sonido de alerta reproducido');
+    } catch (error) {
+        console.warn('[alerta] No se pudo reproducir sonido:', error);
+    }
+}
+
+// Configurar eventos del modal
+function configurarEventosAlerta() {
+    const modal = document.getElementById('humedadCriticaModal');
+    if (modal) {
+        // Botón de silenciar
+        const btnSilenciar = modal.querySelector('.btn-outline-secondary');
+        if (btnSilenciar) {
+            btnSilenciar.addEventListener('click', silenciarAlerta);
+        }
+        
+        console.log('[alerta] Eventos de alerta configurados');
+    }
+}
+
 // Inicializar UI adicional después de cargar
 document.addEventListener('DOMContentLoaded', () => {
     initAddDeviceUI();
     initTimeSlider(); // Inicializar el slider de tiempo
+    configurarEventosAlerta(); // Configurar alertas de humedad
 });
