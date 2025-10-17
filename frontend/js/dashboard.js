@@ -330,8 +330,8 @@ async function cargarDispositivos() {
         // Mostrar/ocultar botón de siguiente según cantidad de dispositivos
         updateNavigationButton();
         
-        // Verificar humedad crítica en todos los dispositivos
-        verificarHumedadCriticaTodos();
+        // Verificar alertas críticas en todos los dispositivos
+        verificarAlertasCriticasTodos();
         
         // Actualizar tarjeta de dispositivos
         const dispositivoNombre = document.getElementById('dispositivo-nombre');
@@ -423,7 +423,7 @@ function cargarDispositivosPrueba() {
             tipo: 'Raspberry Pi', 
             ubicacion: 'Laboratorio',
             humedad_actual: 72.8,
-            temperatura_actual: 24.7,
+            temperatura_actual: 37.2, // Temperatura crítica para probar alerta
             fecha_ultima_lectura: new Date().toISOString()
         }
     ];
@@ -490,8 +490,8 @@ function cargarDispositivosPrueba() {
     // Mostrar/ocultar botón de siguiente según cantidad de dispositivos
     updateNavigationButton();
     
-    // Verificar humedad crítica en dispositivos de prueba
-    verificarHumedadCriticaTodos();
+    // Verificar alertas críticas en dispositivos de prueba
+    verificarAlertasCriticasTodos();
 }
 
 // ============================================
@@ -1496,37 +1496,187 @@ function applyManualTime() {
 }
 
 // ============================================
-// SISTEMA DE ALERTAS DE HUMEDAD CRÍTICA
+// SISTEMA DE ALERTAS CRÍTICAS
 // ============================================
 
-// Configuración de alerta
+// Configuración de alertas
 const HUMEDAD_CRITICA = 85; // Porcentaje crítico de humedad
+const TEMPERATURA_CRITICA = 35; // Temperatura crítica en °C
 let alertaSilenciada = false;
+let alertaTemperaturaSilenciada = false;
 let tiempoSilencio = null;
+let tiempoSilencioTemperatura = null;
 let modalAlertaActivo = false; // Evitar múltiples modales
+let colaAlertas = []; // Cola para manejar múltiples alertas
 
-// Verificar humedad crítica en todos los dispositivos
-function verificarHumedadCriticaTodos() {
+// Verificar alertas críticas en todos los dispositivos
+function verificarAlertasCriticasTodos() {
     if (!dispositivosActivos || dispositivosActivos.length === 0) return;
     
-    let dispositivoMasCritico = null;
+    let dispositivoMasCriticoHumedad = null;
     let humedadMaxima = 0;
+    let dispositivoMasCriticoTemperatura = null;
+    let temperaturaMaxima = 0;
     
-    // Encontrar el dispositivo con mayor humedad crítica
+    // Encontrar dispositivos más críticos
     dispositivosActivos.forEach(dispositivo => {
+        // Verificar humedad
         if (dispositivo.humedad_actual !== null && dispositivo.humedad_actual !== undefined) {
             const humedad = parseFloat(dispositivo.humedad_actual);
             if (!isNaN(humedad) && humedad >= HUMEDAD_CRITICA && humedad > humedadMaxima) {
                 humedadMaxima = humedad;
-                dispositivoMasCritico = dispositivo;
+                dispositivoMasCriticoHumedad = dispositivo;
+            }
+        }
+        
+        // Verificar temperatura
+        if (dispositivo.temperatura_actual !== null && dispositivo.temperatura_actual !== undefined) {
+            const temperatura = parseFloat(dispositivo.temperatura_actual);
+            if (!isNaN(temperatura) && temperatura >= TEMPERATURA_CRITICA && temperatura > temperaturaMaxima) {
+                temperaturaMaxima = temperatura;
+                dispositivoMasCriticoTemperatura = dispositivo;
             }
         }
     });
     
-    // Solo mostrar alerta del dispositivo más crítico
-    if (dispositivoMasCritico) {
-        verificarHumedadCritica(humedadMaxima, dispositivoMasCritico);
+    // Agregar alertas a la cola
+    if (dispositivoMasCriticoHumedad) {
+        agregarAlertaACola('humedad', humedadMaxima, dispositivoMasCriticoHumedad);
     }
+    if (dispositivoMasCriticoTemperatura) {
+        agregarAlertaACola('temperatura', temperaturaMaxima, dispositivoMasCriticoTemperatura);
+    }
+    
+    // Procesar cola de alertas
+    procesarColaAlertas();
+}
+
+// Agregar alerta a la cola
+function agregarAlertaACola(tipo, valor, dispositivo) {
+    // Evitar duplicados en la cola
+    const existe = colaAlertas.some(alerta => 
+        alerta.tipo === tipo && alerta.dispositivo.id === dispositivo.id
+    );
+    
+    if (!existe) {
+        colaAlertas.push({
+            tipo: tipo,
+            valor: valor,
+            dispositivo: dispositivo,
+            timestamp: Date.now()
+        });
+        console.log(`[alerta] Agregada a cola: ${tipo} ${valor} - ${dispositivo.nombre}`);
+    }
+}
+
+// Procesar cola de alertas
+function procesarColaAlertas() {
+    if (modalAlertaActivo || colaAlertas.length === 0) {
+        return;
+    }
+    
+    // Tomar la primera alerta de la cola
+    const alerta = colaAlertas.shift();
+    
+    if (alerta.tipo === 'humedad') {
+        verificarHumedadCritica(alerta.valor, alerta.dispositivo);
+    } else if (alerta.tipo === 'temperatura') {
+        verificarTemperaturaCritica(alerta.valor, alerta.dispositivo);
+    }
+}
+
+// Verificar temperatura crítica
+function verificarTemperaturaCritica(temperatura, dispositivo) {
+    // Verificar si ya hay un modal activo
+    if (modalAlertaActivo) {
+        console.log('[alerta-temp] Modal ya activo, agregando a cola');
+        return;
+    }
+    
+    // Verificar si la alerta está silenciada
+    if (alertaTemperaturaSilenciada && tiempoSilencioTemperatura) {
+        const tiempoTranscurrido = Date.now() - tiempoSilencioTemperatura;
+        const unaHora = 60 * 60 * 1000; // 1 hora en milisegundos
+        
+        if (tiempoTranscurrido < unaHora) {
+            console.log('[alerta-temp] Alerta silenciada por', Math.round((unaHora - tiempoTranscurrido) / 60000), 'minutos más');
+            return;
+        } else {
+            // Reactivar alertas después de 1 hora
+            alertaTemperaturaSilenciada = false;
+            tiempoSilencioTemperatura = null;
+            console.log('[alerta-temp] Alertas reactivadas después del período de silencio');
+        }
+    }
+    
+    // Verificar si la temperatura es crítica
+    if (temperatura >= TEMPERATURA_CRITICA) {
+        mostrarAlertaTemperaturaCritica(temperatura, dispositivo);
+    }
+}
+
+// Mostrar modal de alerta de temperatura
+function mostrarAlertaTemperaturaCritica(temperatura, dispositivo) {
+    console.log(`[alerta-temp] Temperatura crítica detectada: ${temperatura}°C en ${dispositivo.nombre}`);
+    
+    // Marcar modal como activo
+    modalAlertaActivo = true;
+    
+    // Actualizar contenido del modal
+    const dispositivoElement = document.getElementById('dispositivo-alerta-temp');
+    const temperaturaElement = document.getElementById('temperatura-valor-alerta');
+    const limiteCriticoElement = document.getElementById('limite-critico-temp-display');
+    const tiempoDeteccionElement = document.getElementById('tiempo-deteccion-temp');
+    
+    if (dispositivoElement) dispositivoElement.textContent = dispositivo.nombre;
+    if (temperaturaElement) temperaturaElement.textContent = temperatura.toFixed(1);
+    if (limiteCriticoElement) limiteCriticoElement.textContent = TEMPERATURA_CRITICA;
+    if (tiempoDeteccionElement) {
+        tiempoDeteccionElement.textContent = new Date().toLocaleString('es-ES', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    
+    // Verificar si el modal ya existe y está visible
+    const modalElement = document.getElementById('temperaturaCriticaModal');
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    
+    if (existingModal && modalElement.classList.contains('show')) {
+        console.log('[alerta-temp] Modal ya visible, actualizando contenido solamente');
+        return;
+    }
+    
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(modalElement);
+    
+    // Agregar evento cuando se cierre el modal
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        modalAlertaActivo = false;
+        console.log('[alerta-temp] Modal cerrado, procesando siguiente alerta');
+        // Procesar siguiente alerta en la cola
+        setTimeout(procesarColaAlertas, 500);
+    }, { once: true });
+    
+    modal.show();
+    
+    // Reproducir sonido de alerta (opcional)
+    reproducirSonidoAlerta();
+}
+
+// Silenciar alerta de temperatura por 1 hora
+function silenciarAlertaTemperatura() {
+    alertaTemperaturaSilenciada = true;
+    tiempoSilencioTemperatura = Date.now();
+    modalAlertaActivo = false; // Permitir nuevas alertas después del silencio
+    console.log('[alerta-temp] Alerta de temperatura silenciada por 1 hora');
+    
+    // Cerrar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('temperaturaCriticaModal'));
+    if (modal) modal.hide();
 }
 
 // Verificar humedad crítica

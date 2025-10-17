@@ -351,6 +351,49 @@
         </div>
     </div>
 
+    <!-- Modal de Alerta de Temperatura Crítica -->
+    <div class="modal fade" id="temperaturaCriticaModal" tabindex="-1" aria-labelledby="temperaturaCriticaModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="temperaturaCriticaModalLabel">
+                        <i class="bi bi-thermometer-high me-2"></i>
+                        ¡Alerta de Temperatura Crítica!
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="alert-icon mb-3">
+                        <i class="bi bi-thermometer-high text-warning" style="font-size: 4rem;"></i>
+                    </div>
+                    <h4 class="text-warning mb-3">Temperatura Peligrosamente Alta</h4>
+                    <p class="mb-3">
+                        <strong>Dispositivo:</strong> <span id="dispositivo-alerta-temp">--</span><br>
+                        <strong>Temperatura Actual:</strong> <span id="temperatura-valor-alerta" class="text-warning fw-bold">--</span>°C<br>
+                        <strong>Límite Crítico:</strong> <span id="limite-critico-temp-display" class="text-danger fw-bold">35</span>°C
+                    </p>
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Acción Recomendada:</strong> Revise inmediatamente el sistema de refrigeración y ventilación. 
+                        Las temperaturas altas pueden estresar las plantas y afectar su crecimiento.
+                    </div>
+                    <small class="text-muted">
+                        <i class="bi bi-clock me-1"></i>
+                        Detectado: <span id="tiempo-deteccion-temp">--</span>
+                    </small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" onclick="silenciarAlertaTemperatura()">
+                        <i class="bi bi-bell-slash"></i> Silenciar por 1 hora
+                    </button>
+                    <button type="button" class="btn btn-warning" data-bs-dismiss="modal">
+                        <i class="bi bi-check-lg"></i> Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Alerta de Humedad Crítica -->
     <div class="modal fade" id="humedadCriticaModal" tabindex="-1" aria-labelledby="humedadCriticaModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">

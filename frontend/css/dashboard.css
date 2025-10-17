@@ -651,7 +651,7 @@ body {
 }
 
 /* ========================================
-   MODAL DE ALERTA DE HUMEDAD CRÍTICA
+   MODALES DE ALERTA CRÍTICA
    ======================================== */
 
 .modal-content {
@@ -661,6 +661,10 @@ body {
 
 .modal-header.bg-danger {
     background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+}
+
+.modal-header.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ffb800 100%) !important;
 }
 
 .alert-icon {
@@ -684,7 +688,13 @@ body {
     border-radius: 8px;
 }
 
-#humedadCriticaModal .modal-footer .btn {
+.modal-body .alert.alert-danger {
+    border-left: 4px solid #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+}
+
+#humedadCriticaModal .modal-footer .btn,
+#temperaturaCriticaModal .modal-footer .btn {
     border-radius: 8px;
     padding: 10px 20px;
     font-weight: 600;
