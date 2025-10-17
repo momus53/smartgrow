@@ -8,10 +8,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
-    
     <!-- Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-    
     <!-- Custom Dashboard CSS -->
     <link href="css/dashboard.css" rel="stylesheet">
 </head>
@@ -272,110 +270,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Estadísticas Detalladas -->
-        <div class="row g-4 mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-clipboard-data text-info"></i>
-                            Estadísticas (Últimas 24 Horas)
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-6 col-md-4 col-lg-2">
-                                <div class="stat-mini">
-                                    <div class="stat-mini-label">Temp. Promedio</div>
-                                    <div class="stat-mini-value">
-                                        <span id="temp-promedio">--</span><span class="unit-mini">°C</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6 col-md-4 col-lg-2">
-                                <div class="stat-mini">
-                                    <div class="stat-mini-label">Temp. Máxima</div>
-                                    <div class="stat-mini-value">
-                                        <span id="temp-maxima">--</span><span class="unit-mini">°C</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6 col-md-4 col-lg-2">
-                                <div class="stat-mini">
-                                    <div class="stat-mini-label">Temp. Mínima</div>
-                                    <div class="stat-mini-value">
-                                        <span id="temp-minima">--</span><span class="unit-mini">°C</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6 col-md-4 col-lg-2">
-                                <div class="stat-mini">
-                                    <div class="stat-mini-label">Hum. Promedio</div>
-                                    <div class="stat-mini-value">
-                                        <span id="humedad-promedio">--</span><span class="unit-mini">%</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6 col-md-4 col-lg-2">
-                                <div class="stat-mini">
-                                    <div class="stat-mini-label">Hum. Máxima</div>
-                                    <div class="stat-mini-value">
-                                        <span id="humedad-maxima">--</span><span class="unit-mini">%</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6 col-md-4 col-lg-2">
-                                <div class="stat-mini">
-                                    <div class="stat-mini-label">Hum. Mínima</div>
-                                    <div class="stat-mini-value">
-                                        <span id="humedad-minima">--</span><span class="unit-mini">%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tabla de Últimos Registros -->
-        <div class="row g-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-table text-success"></i>
-                            Últimos Registros
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="tabla-registros">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Dispositivo</th>
-                                        <th>Temperatura</th>
-                                        <th>Humedad</th>
-                                        <th>Fecha/Hora</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabla-body">
-                                    <tr>
-                                        <td colspan="5" class="text-center">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="visually-hidden">Cargando...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </div>
