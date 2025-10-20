@@ -67,6 +67,13 @@
                         <i class="bi bi-thermometer-half stat-icon"></i>
                         <h6 class="card-subtitle mb-2 opacity-75">
                             <i class="bi bi-thermometer"></i> Temperatura Actual
+                            <button id="temperatura-alerta-silenciada-icon" 
+                                    class="btn btn-sm alerta-silenciada-btn" 
+                                    style="display: none;" 
+                                    title="Cancelar silencio de temperatura"
+                                    onclick="cancelarSilencioTemperatura()">
+                                <i class="bi bi-bell-slash-fill"></i>
+                            </button>
                         </h6>
                         <h2 class="stat-value">
                             <span id="temp-actual">--</span><span class="unit-symbol">°C</span>
@@ -83,6 +90,13 @@
                         <i class="bi bi-droplet-half stat-icon"></i>
                         <h6 class="card-subtitle mb-2 opacity-75">
                             <i class="bi bi-droplet"></i> Humedad Actual
+                            <button id="humedad-alerta-silenciada-icon" 
+                                    class="btn btn-sm alerta-silenciada-btn" 
+                                    style="display: none;" 
+                                    title="Cancelar silencio de humedad"
+                                    onclick="cancelarSilencioHumedad()">
+                                <i class="bi bi-bell-slash-fill"></i>
+                            </button>
                         </h6>
                         <h2 class="stat-value">
                             <span id="humedad-actual">--</span><span class="unit-symbol">%</span>

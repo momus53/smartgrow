@@ -17,6 +17,58 @@ body {
 }
 
 /* ========================================
+   ICONOS DE ALERTAS SILENCIADAS
+   ======================================== */
+
+.alerta-silenciada-btn {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 2px solid #ff6b35 !important;
+    color: #ff6b35 !important;
+    border-radius: 50% !important;
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    margin-left: 8px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3) !important;
+    animation: silencedPulse 2s ease-in-out infinite;
+    /* IMPORTANTE: Ocultar por defecto */
+    display: none !important;
+}
+
+/* Solo mostrar cuando esté explícitamente visible */
+.alerta-silenciada-btn[style*="display: inline-flex"] {
+    display: inline-flex !important;
+}
+
+.alerta-silenciada-btn:hover {
+    background: #ff6b35 !important;
+    color: white !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.5) !important;
+}
+
+.alerta-silenciada-btn:active {
+    transform: scale(0.95) !important;
+}
+
+@keyframes silencedPulse {
+    0%, 100% { 
+        opacity: 0.8; 
+        transform: scale(1);
+        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    }
+    50% { 
+        opacity: 1; 
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.5);
+    }
+}
+
+/* ========================================
    NAVBAR STYLES
    ======================================== */
 

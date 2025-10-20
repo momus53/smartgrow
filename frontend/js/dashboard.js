@@ -955,6 +955,7 @@ function iniciarActualizacionAutomatica() {
     updateInterval = setInterval(() => {
         console.log('🔄 Actualizando datos automáticamente...');
         cargarDatos({ showSuccess: false });
+        actualizarIconosAlertasSilenciadas(); // Actualizar iconos de alertas silenciadas
     }, 10000);
     console.log('✅ Actualización automática activada (cada 10 segundos)');
 }
@@ -1606,6 +1607,7 @@ function verificarTemperaturaCritica(temperatura, dispositivo) {
             alertaTemperaturaSilenciada = false;
             tiempoSilencioTemperatura = null;
             console.log('[alerta-temp] Alertas reactivadas después del período de silencio');
+            actualizarIconosAlertasSilenciadas(); // Ocultar icono al reactivar
         }
     }
     
@@ -1674,6 +1676,9 @@ function silenciarAlertaTemperatura() {
     modalAlertaActivo = false; // Permitir nuevas alertas después del silencio
     console.log('[alerta-temp] Alerta de temperatura silenciada por 1 hora');
     
+    // Actualizar icono de alerta silenciada
+    actualizarIconosAlertasSilenciadas();
+    
     // Cerrar modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('temperaturaCriticaModal'));
     if (modal) modal.hide();
@@ -1700,6 +1705,7 @@ function verificarHumedadCritica(humedad, dispositivo) {
             alertaSilenciada = false;
             tiempoSilencio = null;
             console.log('[alerta] Alertas reactivadas después del período de silencio');
+            actualizarIconosAlertasSilenciadas(); // Ocultar icono al reactivar
         }
     }
     
@@ -1766,6 +1772,9 @@ function silenciarAlerta() {
     modalAlertaActivo = false; // Permitir nuevas alertas después del silencio
     console.log('[alerta] Alerta silenciada por 1 hora');
     
+    // Actualizar icono de alerta silenciada
+    actualizarIconosAlertasSilenciadas();
+    
     // Cerrar modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('humedadCriticaModal'));
     if (modal) modal.hide();
@@ -1798,6 +1807,124 @@ function reproducirSonidoAlerta() {
     }
 }
 
+// ============================================
+// CANCELAR SILENCIO DE ALERTAS
+// ============================================
+
+// Cancelar silencio de humedad
+function cancelarSilencioHumedad() {
+    alertaSilenciada = false;
+    tiempoSilencio = null;
+    console.log('[alerta] Silencio de humedad cancelado manualmente');
+    
+    // Actualizar iconos inmediatamente
+    actualizarIconosAlertasSilenciadas();
+    
+    // Mostrar mensaje de confirmación
+    mostrarNotificacionSimple('✅ Silencio de humedad cancelado. Las alertas están activas nuevamente.');
+}
+
+// Cancelar silencio de temperatura
+function cancelarSilencioTemperatura() {
+    alertaTemperaturaSilenciada = false;
+    tiempoSilencioTemperatura = null;
+    console.log('[alerta-temp] Silencio de temperatura cancelado manualmente');
+    
+    // Actualizar iconos inmediatamente
+    actualizarIconosAlertasSilenciadas();
+    
+    // Mostrar mensaje de confirmación
+    mostrarNotificacionSimple('✅ Silencio de temperatura cancelado. Las alertas están activas nuevamente.');
+}
+
+// Mostrar notificación simple (usando console y posible futura implementación con toast)
+function mostrarNotificacionSimple(mensaje) {
+    console.log('[notificación]', mensaje);
+    
+    // Crear una notificación temporal en la esquina superior derecha
+    const notificacion = document.createElement('div');
+    notificacion.className = 'alert alert-info alert-dismissible position-fixed';
+    notificacion.style.cssText = `
+        top: 20px; 
+        right: 20px; 
+        z-index: 9999; 
+        max-width: 350px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border: none;
+        background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+        color: white;
+    `;
+    notificacion.innerHTML = `
+        ${mensaje}
+        <button type="button" class="btn-close btn-close-white" onclick="this.parentElement.remove()"></button>
+    `;
+    
+    document.body.appendChild(notificacion);
+    
+    // Auto-remover después de 4 segundos
+    setTimeout(() => {
+        if (notificacion.parentElement) {
+            notificacion.remove();
+        }
+    }, 4000);
+}
+
+// ============================================
+// ICONOS DE ALERTAS SILENCIADAS
+// ============================================
+
+// Actualizar visibilidad de iconos de alertas silenciadas
+function actualizarIconosAlertasSilenciadas() {
+    const humedadBtn = document.getElementById('humedad-alerta-silenciada-icon');
+    const temperaturaBtn = document.getElementById('temperatura-alerta-silenciada-icon');
+    
+    console.log('[iconos] Actualizando iconos de alertas silenciadas...');
+    console.log('[iconos] alertaSilenciada:', alertaSilenciada, 'tiempoSilencio:', tiempoSilencio);
+    console.log('[iconos] alertaTemperaturaSilenciada:', alertaTemperaturaSilenciada, 'tiempoSilencioTemperatura:', tiempoSilencioTemperatura);
+    
+    // Mostrar/ocultar botón de humedad silenciada
+    if (humedadBtn) {
+        if (alertaSilenciada && tiempoSilencio) {
+            const tiempoTranscurrido = Date.now() - tiempoSilencio;
+            const unaHora = 60 * 60 * 1000;
+            
+            if (tiempoTranscurrido < unaHora) {
+                humedadBtn.style.setProperty('display', 'inline-flex', 'important');
+                const minutosRestantes = Math.ceil((unaHora - tiempoTranscurrido) / 60000);
+                humedadBtn.title = `Cancelar silencio de humedad (${minutosRestantes} min restantes)`;
+                console.log('[iconos] Mostrando botón de humedad, minutos restantes:', minutosRestantes);
+            } else {
+                humedadBtn.style.setProperty('display', 'none', 'important');
+                console.log('[iconos] Ocultando botón de humedad (tiempo expirado)');
+            }
+        } else {
+            humedadBtn.style.setProperty('display', 'none', 'important');
+            console.log('[iconos] Ocultando botón de humedad (no silenciada)');
+        }
+    }
+    
+    // Mostrar/ocultar botón de temperatura silenciada
+    if (temperaturaBtn) {
+        if (alertaTemperaturaSilenciada && tiempoSilencioTemperatura) {
+            const tiempoTranscurrido = Date.now() - tiempoSilencioTemperatura;
+            const unaHora = 60 * 60 * 1000;
+            
+            if (tiempoTranscurrido < unaHora) {
+                temperaturaBtn.style.setProperty('display', 'inline-flex', 'important');
+                const minutosRestantes = Math.ceil((unaHora - tiempoTranscurrido) / 60000);
+                temperaturaBtn.title = `Cancelar silencio de temperatura (${minutosRestantes} min restantes)`;
+                console.log('[iconos] Mostrando botón de temperatura, minutos restantes:', minutosRestantes);
+            } else {
+                temperaturaBtn.style.setProperty('display', 'none', 'important');
+                console.log('[iconos] Ocultando botón de temperatura (tiempo expirado)');
+            }
+        } else {
+            temperaturaBtn.style.setProperty('display', 'none', 'important');
+            console.log('[iconos] Ocultando botón de temperatura (no silenciada)');
+        }
+    }
+}
+
 // Configurar eventos del modal
 function configurarEventosAlerta() {
     const modal = document.getElementById('humedadCriticaModal');
@@ -1817,4 +1944,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initAddDeviceUI();
     initTimeSlider(); // Inicializar el slider de tiempo
     configurarEventosAlerta(); // Configurar alertas de humedad
+    actualizarIconosAlertasSilenciadas(); // Inicializar iconos de alertas silenciadas
 });
