@@ -1939,6 +1939,218 @@ function configurarEventosAlerta() {
     }
 }
 
+// ============================================
+// SISTEMA DE ALARMAS PARA LUCES
+// ============================================
+
+// Array para almacenar las alarmas configuradas
+let alarmasConfiguradas = [];
+
+// Variable para almacenar la hora seleccionada en el slider
+let horaSeleccionada = 12; // Hora por defecto (12:00)
+let minutosSeleccionados = 0; // Minutos por defecto
+
+// Aplicar alarma (encender/apagar)
+function aplicarAlarma(tipo) {
+    const hora = Math.floor(horaSeleccionada);
+    const minutos = minutosSeleccionados;
+    const horaString = String(hora).padStart(2, '0');
+    const minutosString = String(minutos).padStart(2, '0');
+    const horaCompleta = `${horaString}:${minutosString}`;
+    
+    // Verificar si ya existe una alarma para esa hora
+    const alarmaExistente = alarmasConfiguradas.find(a => a.hora === horaCompleta);
+    if (alarmaExistente) {
+        mostrarNotificacionSimple(`⚠️ Ya existe una alarma ${alarmaExistente.tipo} para las ${horaCompleta}`);
+        return;
+    }
+    
+    // Crear nueva alarma
+    const nuevaAlarma = {
+        id: Date.now(), // ID único
+        hora: horaCompleta,
+        tipo: tipo,
+        activa: true,
+        fechaCreacion: new Date()
+    };
+    
+    // Agregar a la lista
+    alarmasConfiguradas.push(nuevaAlarma);
+    
+    // Ordenar alarmas por hora
+    alarmasConfiguradas.sort((a, b) => {
+        const [horaA, minA] = a.hora.split(':').map(Number);
+        const [horaB, minB] = b.hora.split(':').map(Number);
+        const totalMinA = horaA * 60 + minA;
+        const totalMinB = horaB * 60 + minB;
+        return totalMinA - totalMinB;
+    });
+    
+    // Actualizar UI
+    actualizarListaAlarmas();
+    
+    // Mostrar confirmación
+    const icono = tipo === 'encender' ? '💡' : '🌙';
+    mostrarNotificacionSimple(`${icono} Alarma ${tipo.toUpperCase()} configurada para las ${horaCompleta}`);
+    
+    console.log('[alarmas] Nueva alarma configurada:', nuevaAlarma);
+}
+
+// Eliminar alarma
+function eliminarAlarma(id) {
+    const alarma = alarmasConfiguradas.find(a => a.id === id);
+    if (alarma) {
+        alarmasConfiguradas = alarmasConfiguradas.filter(a => a.id !== id);
+        actualizarListaAlarmas();
+        mostrarNotificacionSimple(`🗑️ Alarma ${alarma.tipo.toUpperCase()} de las ${alarma.hora} eliminada`);
+        console.log('[alarmas] Alarma eliminada:', alarma);
+    }
+}
+
+// Actualizar la lista visual de alarmas
+function actualizarListaAlarmas() {
+    const listaContainer = document.getElementById('lista-alarmas');
+    if (!listaContainer) return;
+    
+    if (alarmasConfiguradas.length === 0) {
+        listaContainer.innerHTML = `
+            <div class="text-muted text-center p-3">
+                <i class="bi bi-clock"></i><br>
+                No hay alarmas configuradas
+            </div>
+        `;
+        return;
+    }
+    
+    const html = alarmasConfiguradas.map(alarma => {
+        const tipoClass = alarma.tipo === 'encender' ? 'encender' : 'apagar';
+        const icono = alarma.tipo === 'encender' ? 'bi-lightbulb-fill' : 'bi-lightbulb';
+        
+        return `
+            <div class="alarma-item">
+                <div class="alarma-info">
+                    <i class="bi ${icono} text-${alarma.tipo === 'encender' ? 'success' : 'danger'}"></i>
+                    <span class="alarma-hora">${alarma.hora}</span>
+                    <span class="alarma-tipo ${tipoClass}">${alarma.tipo}</span>
+                </div>
+                <div class="alarma-actions">
+                    <button class="btn-eliminar-alarma" onclick="eliminarAlarma(${alarma.id})" title="Eliminar alarma">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    listaContainer.innerHTML = html;
+}
+
+// Función para actualizar la hora seleccionada desde el slider
+function updateTimeDisplay(value) {
+    const totalMinutos = parseInt(value);
+    const horas = Math.floor(totalMinutos / 60);
+    const minutos = totalMinutos % 60;
+    
+    // Actualizar variables globales
+    horaSeleccionada = horas;
+    minutosSeleccionados = minutos;
+    
+    // Actualizar display de hora seleccionada
+    const selectedTimeElement = document.getElementById('selected-time');
+    if (selectedTimeElement) {
+        const horaString = String(horas).padStart(2, '0');
+        const minutosString = String(minutos).padStart(2, '0');
+        selectedTimeElement.textContent = `${horaString}:${minutosString}`;
+    }
+    
+    // Actualizar período del día
+    const periodElement = document.getElementById('time-period');
+    const daylightElement = document.getElementById('daylight-status');
+    
+    if (periodElement && daylightElement) {
+        let periodo, estadoLuz, icono, colorClass;
+        
+        if (horas >= 0 && horas < 6) {
+            periodo = 'Madrugada';
+            estadoLuz = 'Noche';
+            icono = 'bi-moon-stars';
+            colorClass = 'text-primary';
+        } else if (horas >= 6 && horas < 8) {
+            periodo = 'Amanecer';
+            estadoLuz = 'Alba';
+            icono = 'bi-sunrise';
+            colorClass = 'text-warning';
+        } else if (horas >= 8 && horas < 12) {
+            periodo = 'Mañana';
+            estadoLuz = 'Día';
+            icono = 'bi-sun';
+            colorClass = 'text-warning';
+        } else if (horas >= 12 && horas < 14) {
+            periodo = 'Mediodía';
+            estadoLuz = 'Día';
+            icono = 'bi-sun-fill';
+            colorClass = 'text-warning';
+        } else if (horas >= 14 && horas < 18) {
+            periodo = 'Tarde';
+            estadoLuz = 'Día';
+            icono = 'bi-sun';
+            colorClass = 'text-warning';
+        } else if (horas >= 18 && horas < 20) {
+            periodo = 'Atardecer';
+            estadoLuz = 'Crepúsculo';
+            icono = 'bi-sunset';
+            colorClass = 'text-danger';
+        } else {
+            periodo = 'Noche';
+            estadoLuz = 'Noche';
+            icono = 'bi-moon';
+            colorClass = 'text-primary';
+        }
+        
+        periodElement.textContent = periodo;
+        daylightElement.innerHTML = `<i class="bi ${icono} ${colorClass}"></i> ${estadoLuz}`;
+    }
+}
+
+// Inicializar slider de tiempo
+function initTimeSlider() {
+    const slider = document.getElementById('hour-slider');
+    if (slider) {
+        // Establecer hora actual por defecto
+        const ahora = new Date();
+        const horaActual = ahora.getHours();
+        const minutosActuales = ahora.getMinutes();
+        const valorInicial = horaActual * 60 + minutosActuales;
+        
+        slider.value = valorInicial;
+        updateTimeDisplay(valorInicial);
+        
+        console.log('[slider] Slider de tiempo inicializado');
+    }
+    
+    // Configurar botón de hora actual
+    const btnHoraActual = document.querySelector('button[onclick*="resetToCurrentTime"]');
+    if (btnHoraActual) {
+        btnHoraActual.onclick = resetToCurrentTime;
+    }
+}
+
+// Resetear a hora actual
+function resetToCurrentTime() {
+    const ahora = new Date();
+    const horaActual = ahora.getHours();
+    const minutosActuales = ahora.getMinutes();
+    const valorActual = horaActual * 60 + minutosActuales;
+    
+    const slider = document.getElementById('hour-slider');
+    if (slider) {
+        slider.value = valorActual;
+        updateTimeDisplay(valorActual);
+        
+        mostrarNotificacionSimple('🕒 Hora actualizada a la hora actual');
+    }
+}
+
 // Inicializar UI adicional después de cargar
 document.addEventListener('DOMContentLoaded', () => {
     initAddDeviceUI();

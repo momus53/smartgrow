@@ -284,6 +284,35 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Controles de Alarmas -->
+                            <div class="alarm-controls mt-4">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <button class="btn btn-success btn-lg w-100" id="btn-alarma-encender" onclick="aplicarAlarma('encender')">
+                                            <i class="bi bi-lightbulb-fill"></i> Aplicar Alarma ENCENDER
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <button class="btn btn-danger btn-lg w-100" id="btn-alarma-apagar" onclick="aplicarAlarma('apagar')">
+                                            <i class="bi bi-lightbulb"></i> Aplicar Alarma APAGAR
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Lista de Alarmas Configuradas -->
+                            <div class="alarmas-configuradas mt-4">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-alarm"></i> Alarmas Configuradas
+                                </h6>
+                                <div id="lista-alarmas" class="alarmas-list">
+                                    <div class="text-muted text-center p-3">
+                                        <i class="bi bi-clock"></i><br>
+                                        No hay alarmas configuradas
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
