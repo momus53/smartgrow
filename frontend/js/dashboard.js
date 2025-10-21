@@ -2001,7 +2001,7 @@ function eliminarAlarma(id) {
     const alarma = alarmasConfiguradas.find(a => a.id === id);
     if (alarma) {
         alarmasConfiguradas = alarmasConfiguradas.filter(a => a.id !== id);
-        actualizarListaAlarmas();
+        actualizarListaAlarmas(); // Esto ya incluye actualizarBarrasColores()
         mostrarNotificacionSimple(`🗑️ Alarma ${alarma.tipo.toUpperCase()} de las ${alarma.hora} eliminada`);
         console.log('[alarmas] Alarma eliminada:', alarma);
     }
@@ -2019,6 +2019,8 @@ function actualizarListaAlarmas() {
                 No hay alarmas configuradas
             </div>
         `;
+        // Limpiar barras de colores cuando no hay alarmas
+        actualizarBarrasColores();
         return;
     }
     
@@ -2043,6 +2045,102 @@ function actualizarListaAlarmas() {
     }).join('');
     
     listaContainer.innerHTML = html;
+    
+    // Actualizar barras de colores
+    actualizarBarrasColores();
+}
+
+// Actualizar las barras de colores en el slider según las alarmas
+function actualizarBarrasColores() {
+    const track = document.getElementById('alarm-color-track');
+    if (!track) return;
+    
+    // Limpiar barras existentes
+    track.innerHTML = '';
+    
+    if (alarmasConfiguradas.length === 0) {
+        // Sin alarmas: barra neutra completa
+        const segmentoNeutro = document.createElement('div');
+        segmentoNeutro.className = 'alarm-segment neutro';
+        segmentoNeutro.style.left = '0%';
+        segmentoNeutro.style.width = '100%';
+        track.appendChild(segmentoNeutro);
+        return;
+    }
+    
+    // Convertir alarmas a minutos y ordenar
+    const alarmasEnMinutos = alarmasConfiguradas.map(alarma => {
+        const [hora, minuto] = alarma.hora.split(':').map(Number);
+        return {
+            minutos: hora * 60 + minuto,
+            tipo: alarma.tipo
+        };
+    }).sort((a, b) => a.minutos - b.minutos);
+    
+    // Determinar el estado inicial basado en la lógica de alarmas
+    let estadoActual = 'apagar'; // Estado por defecto: apagado
+    
+    // Buscar la última alarma del día anterior (simulando que el día anterior termina en la última alarma)
+    // Para simplificar, asumimos que el día comienza apagado a menos que haya una secuencia lógica
+    if (alarmasEnMinutos.length > 0) {
+        // Si hay alarmas, verificar el patrón
+        const primeraAlarma = alarmasEnMinutos[0];
+        const ultimaAlarma = alarmasEnMinutos[alarmasEnMinutos.length - 1];
+        
+        // Si la primera alarma es "apagar", asumimos que empezamos "encendido"
+        if (primeraAlarma.tipo === 'apagar') {
+            estadoActual = 'encender';
+        }
+        // Si la primera alarma es "encender", empezamos "apagado" (por defecto)
+    }
+    
+    let posicionAnterior = 0;
+    
+    for (let i = 0; i < alarmasEnMinutos.length; i++) {
+        const alarmaActual = alarmasEnMinutos[i];
+        const posicionActual = (alarmaActual.minutos / 1440) * 100; // Convertir a porcentaje
+        
+        // Crear segmento desde la posición anterior hasta la actual
+        if (posicionActual > posicionAnterior) {
+            const segmento = document.createElement('div');
+            segmento.className = `alarm-segment ${estadoActual}`;
+            segmento.style.left = `${posicionAnterior}%`;
+            segmento.style.width = `${posicionActual - posicionAnterior}%`;
+            
+            // Agregar tooltip con información
+            const horaInicio = minutosAHora(posicionAnterior * 1440 / 100);
+            const horaFin = minutosAHora(alarmaActual.minutos);
+            segmento.title = `${horaInicio} - ${horaFin}: Luces ${estadoActual.toUpperCase()}`;
+            
+            track.appendChild(segmento);
+        }
+        
+        // Cambiar estado después de esta alarma
+        estadoActual = alarmaActual.tipo;
+        posicionAnterior = posicionActual;
+    }
+    
+    // Crear segmento final desde la última alarma hasta el final del día
+    if (posicionAnterior < 100) {
+        const segmentoFinal = document.createElement('div');
+        segmentoFinal.className = `alarm-segment ${estadoActual}`;
+        segmentoFinal.style.left = `${posicionAnterior}%`;
+        segmentoFinal.style.width = `${100 - posicionAnterior}%`;
+        
+        const horaInicio = minutosAHora(posicionAnterior * 1440 / 100);
+        segmentoFinal.title = `${horaInicio} - 24:00: Luces ${estadoActual.toUpperCase()}`;
+        
+        track.appendChild(segmentoFinal);
+    }
+    
+    console.log('[alarmas] Barras de colores actualizadas con', alarmasConfiguradas.length, 'alarmas');
+}
+
+// Función auxiliar para convertir minutos a formato HH:MM
+function minutosAHora(minutos) {
+    const horas = Math.floor(minutos / 60);
+    const mins = Math.floor(minutos % 60);
+    return `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 }
 
 // Función para actualizar la hora seleccionada desde el slider
@@ -2133,6 +2231,9 @@ function initTimeSlider() {
     if (btnHoraActual) {
         btnHoraActual.onclick = resetToCurrentTime;
     }
+    
+    // Inicializar barras de colores (comenzar con estado neutro)
+    actualizarBarrasColores();
 }
 
 // Resetear a hora actual

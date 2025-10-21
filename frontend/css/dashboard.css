@@ -845,6 +845,96 @@ body {
     transform: scale(1.1);
 }
 
+/* ========================================
+   BARRAS DE COLORES PARA ALARMAS EN SLIDER
+   ======================================== */
+
+.hour-slider-wrapper {
+    position: relative;
+    margin: 20px 0;
+}
+
+.alarm-color-track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    transform: translateY(-50%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.alarm-segment {
+    position: absolute;
+    height: 100%;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    opacity: 0.8;
+}
+
+.alarm-segment.encender {
+    background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.alarm-segment.apagar {
+    background: linear-gradient(90deg, #dc3545 0%, #fd7e14 100%);
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+.alarm-segment.neutro {
+    background: #6c757d;
+    opacity: 0.4;
+}
+
+/* Estilos para el slider */
+.hour-slider {
+    position: relative;
+    z-index: 2;
+    background: transparent !important;
+    height: 8px;
+}
+
+.hour-slider::-webkit-slider-track {
+    background: transparent !important;
+    border: none !important;
+}
+
+.hour-slider::-moz-range-track {
+    background: transparent !important;
+    border: none !important;
+}
+
+.hour-slider::-webkit-slider-thumb {
+    background: #ffffff;
+    border: 3px solid #007bff;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.hour-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.5);
+}
+
+.hour-slider::-moz-range-thumb {
+    background: #ffffff;
+    border: 3px solid #007bff;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
 .modal-body .alert {
     border-left: 4px solid #ffc107;
     background: rgba(255, 193, 7, 0.1);
